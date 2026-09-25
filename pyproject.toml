@@ -3,9 +3,19 @@ name = "lvhm"
 version = "0.1.0"
 description = "RL job sequencing for a low-volume high-mix SO-ARM101 work cell (43008 Assignment 3)"
 requires-python = ">=3.12"
+# Loose lower bounds so `pip install -e .` keeps a preinstalled CUDA build of torch
 dependencies = [
     "gymnasium>=1.0",
-    "numpy>=2.0",
+    "numpy>=1.26",
+    "sb3-contrib>=2.4",
+    "torch>=2.2",
+]
+
+[project.optional-dependencies]
+notebook = [
+    "ipykernel>=6.0",
+    "matplotlib>=3.7",
+    "pandas>=2.0",
 ]
 
 [dependency-groups]
