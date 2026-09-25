@@ -69,10 +69,13 @@ def sample_instance(
     config: EnvConfig,
     rng: np.random.Generator,
     products: Sequence[str] | None = None,
+    arrival_rate: float | None = None,
 ) -> ShiftInstance:
     """Draw one shift. `products=None` samples continuous training features;
-    otherwise each job is one of the named products, chosen uniformly."""
-    n_arrivals = rng.poisson(config.arrival_rate * config.shift_length)
+    otherwise each job is one of the named products, chosen uniformly.
+    `arrival_rate` defaults to config.arrival_rate."""
+    rate = config.arrival_rate if arrival_rate is None else arrival_rate
+    n_arrivals = rng.poisson(rate * config.shift_length)
     arrival = np.concatenate(
         [np.zeros(config.initial_jobs), np.sort(rng.uniform(0.0, config.shift_length, n_arrivals))]
     )

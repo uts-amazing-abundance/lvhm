@@ -1,5 +1,3 @@
-from dataclasses import replace
-
 import numpy as np
 import pytest
 from gymnasium.utils.env_checker import check_env
@@ -26,7 +24,8 @@ def rollout(env, policy, **reset_kwargs):
 
 
 def test_gymnasium_env_checker():
-    check_env(LVHMSchedulingEnv(), skip_render_check=True)
+    # The checker steps with unmasked random actions, so start with every slot filled.
+    check_env(LVHMSchedulingEnv(EnvConfig(initial_jobs=8)), skip_render_check=True)
 
 
 @pytest.mark.parametrize("careful", [False, True])
@@ -63,9 +62,10 @@ def test_reward_matches_metric_decomposition():
 def test_incremental_tardiness_equals_per_job_lateness():
     """Lateness charged step by step must equal each job's lateness at the moment it
     leaves the system (completion or scrap) or at shift end if still waiting."""
-    env = LVHMSchedulingEnv(EnvConfig(arrival_rate=0.2))  # overloaded, so jobs remain at shift end
+    env = LVHMSchedulingEnv()
     for seed in range(5):
-        steps, m = rollout(env, fcfs, seed=seed)
+        # overloaded, so jobs remain at shift end
+        steps, m = rollout(env, fcfs, seed=seed, options={"arrival_rate": 0.2})
         inst = env._inst
         leave = {}
         attempts = {}
@@ -123,21 +123,31 @@ def test_careful_mode_reduces_drops_under_common_random_numbers():
 
 
 def test_busy_day_overflows_visible_slots():
-    cfg = EnvConfig(arrival_rate=0.24)
+    cfg = EnvConfig()
     env = LVHMSchedulingEnv(cfg)
-    env.reset(seed=0)
+    env.reset(seed=0, options={"arrival_rate": 0.24})
     max_queue = 0
     terminated = False
     while not terminated:
         max_queue = max(max_queue, len(env._queue))
-        assert env.action_masks().sum() == min(len(env._queue), cfg.num_slots)
+        assert env.action_masks()[: cfg.num_slots].sum() == min(len(env._queue), cfg.num_slots)
         _, _, terminated, _, _ = env.step(fcfs(None, env))
     assert max_queue > cfg.num_slots
 
 
+def test_training_draws_arrival_rate_per_episode():
+    env = LVHMSchedulingEnv()
+    counts = [len(env._inst) for seed in range(200) if env.reset(seed=seed)]
+    # a fixed rate of 0.12 gives Poisson std ~7.6; U(0.06, 0.18) widens it to ~18
+    assert np.std(counts) > 12
+    fixed = LVHMSchedulingEnv(EnvConfig(arrival_rate_range=None))
+    counts = [len(fixed._inst) for seed in range(200) if fixed.reset(seed=seed)]
+    assert np.std(counts) < 10
+
+
 def test_empty_slot_action_is_rejected():
-    env = LVHMSchedulingEnv(EnvConfig(initial_jobs=1, arrival_rate=0.0))
-    env.reset(seed=0)
+    env = LVHMSchedulingEnv(EnvConfig(initial_jobs=1))
+    env.reset(seed=0, options={"arrival_rate": 0.0})
     with pytest.raises(ValueError):
         env.step(3)
 

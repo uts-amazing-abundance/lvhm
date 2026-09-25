@@ -74,14 +74,18 @@ class LVHMSchedulingEnv(gym.Env):
 
     def reset(self, *, seed: int | None = None, options: dict[str, Any] | None = None):
         """Options: `instance` (a fixed ShiftInstance), `products` (product names to
-        draw jobs from), `weights` (fixed (alpha, beta, delta))."""
+        draw jobs from), `arrival_rate` (fixed rate instead of the training range),
+        `weights` (fixed (alpha, beta, delta))."""
         super().reset(seed=seed)
         options = options or {}
         cfg = self.cfg
 
         inst = options.get("instance")
         if inst is None:
-            inst = sample_instance(cfg, self.np_random, options.get("products"))
+            rate = options.get("arrival_rate")
+            if rate is None and cfg.arrival_rate_range is not None:
+                rate = self.np_random.uniform(*cfg.arrival_rate_range)
+            inst = sample_instance(cfg, self.np_random, options.get("products"), rate)
         if len(inst) == 0:
             raise ValueError("instance has no jobs")
         weights = options.get("weights")

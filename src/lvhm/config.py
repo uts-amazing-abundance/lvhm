@@ -64,7 +64,9 @@ class WeightRanges:
 class EnvConfig:
     # Shift and arrivals
     shift_length: float = 480.0
-    arrival_rate: float = 0.12  # jobs per minute (Poisson); double it for the busy-day test
+    arrival_rate: float = 0.12  # jobs per minute (Poisson) for fixed evaluation shifts; 0.24 is the busy day
+    # Training draws a rate per episode from this range (None: always use arrival_rate)
+    arrival_rate_range: tuple[float, float] | None = (0.06, 0.18)
     initial_jobs: int = 3  # backlog waiting at the start of the shift
     slack: tuple[float, float] = (5.0, 45.0)  # deadline = arrival + nominal processing + slack
 
@@ -81,8 +83,8 @@ class EnvConfig:
     drop_time_fraction: float = 0.5  # share of the processing time lost on a dropped pick
     max_attempts: int = 2  # a job dropped this many times is scrapped
 
-    # Optional careful pick mode (doubles the action space): lower drop risk, slower pick
-    careful_mode: bool = False
+    # Careful pick mode (doubles the action space): lower drop risk, slower pick
+    careful_mode: bool = True
     careful_drop_factor: float = 0.3
     careful_time_factor: float = 1.5
 
