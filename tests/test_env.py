@@ -92,7 +92,7 @@ def test_common_random_numbers_make_runs_reproducible():
 
 def test_familiar_instances_use_only_familiar_products():
     inst = make_instances(EnvConfig(), FAMILIAR, n=1, seed=0)[0]
-    feats = {tuple(v) for v in np.stack([inst.proc, inst.weight, inst.fragility], axis=1)}
+    feats = {tuple(v) for v in np.stack([inst.weight, inst.fragility], axis=1)}
     assert feats <= {PRODUCTS[p] for p in FAMILIAR}
 
 

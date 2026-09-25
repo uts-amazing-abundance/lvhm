@@ -18,7 +18,7 @@ from lvhm.config import FAMILIAR, PRODUCT_NAMES, PRODUCTS, EnvConfig
 @dataclass(frozen=True)
 class ShiftInstance:
     arrival: np.ndarray  # (n,), ascending
-    proc: np.ndarray  # (n,) nominal processing time
+    proc: np.ndarray  # (n,) nominal processing time in normal mode, derived from weight and fragility
     weight: np.ndarray  # (n,)
     fragility: np.ndarray  # (n,)
     tray: np.ndarray  # (n,) int
@@ -57,10 +57,10 @@ def validate_holdout(config: EnvConfig) -> None:
 def sample_training_features(config: EnvConfig, rng: np.random.Generator, n: int) -> np.ndarray:
     """Uniform samples from the training ranges, rejecting the P5 hold-out region."""
     lows, highs = config.features.lows, config.features.highs
-    feats = rng.uniform(lows, highs, size=(n, 3))
+    feats = rng.uniform(lows, highs, size=(n, 2))
     reject = in_holdout(config, feats)
     while reject.any():
-        feats[reject] = rng.uniform(lows, highs, size=(int(reject.sum()), 3))
+        feats[reject] = rng.uniform(lows, highs, size=(int(reject.sum()), 2))
         reject = in_holdout(config, feats)
     return feats
 
@@ -86,15 +86,16 @@ def sample_instance(
         product = np.full(n, -1)
     else:
         product = np.array([PRODUCT_NAMES.index(p) for p in products])[rng.integers(len(products), size=n)]
-        feats = np.array([PRODUCTS[PRODUCT_NAMES[i]] for i in product]).reshape(n, 3)
+        feats = np.array([PRODUCTS[PRODUCT_NAMES[i]] for i in product]).reshape(n, 2)
 
-    proc = feats[:, 0]
+    weight, fragility = feats[:, 0], feats[:, 1]
+    proc = config.proc_time(weight, fragility)
     attempts = (n, config.max_attempts)
     return ShiftInstance(
         arrival=arrival,
         proc=proc,
-        weight=feats[:, 1],
-        fragility=feats[:, 2],
+        weight=weight,
+        fragility=fragility,
         tray=rng.integers(config.num_trays, size=n),
         deadline=arrival + proc + rng.uniform(*config.slack, size=n),
         noise=np.exp(rng.normal(0.0, config.proc_noise_sigma, size=attempts)),

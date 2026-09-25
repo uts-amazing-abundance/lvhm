@@ -31,7 +31,7 @@ def main() -> None:
         cfg = replace(cfg, arrival_rate=2 * cfg.arrival_rate)
     instances = make_instances(cfg, args.products, args.shifts, args.seed)
     jobs = sum(len(i) for i in instances) / len(instances)
-    print(f"{args.shifts} shifts, products {args.products}, arrival rate {cfg.arrival_rate}/min, {jobs:.1f} jobs/shift\n")
+    print(f"{args.shifts} shifts, products {args.products}, arrival rate {cfg.arrival_rate}/s, {jobs:.1f} jobs/shift\n")
 
     print("| Policy | " + " | ".join(METRICS) + " |")
     print("|---" * (len(METRICS) + 1) + "|")

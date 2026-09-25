@@ -8,8 +8,8 @@ The episode terminates when the shift clock expires.
 
 Reward per decision:
     + on_time_bonus                if the served job finishes by its deadline
-    - alpha * late minutes         accrued by every job in the system during the step
-    - beta  * travel minutes
+    - alpha * late seconds         accrued by every job in the system during the step
+    - beta  * travel seconds
     - delta                        per drop (re-queue on the first, scrap on the last)
     - unfinished_penalty * jobs    still waiting when the shift ends
 Tardiness is charged as it accrues rather than at completion, so leaving a late job
@@ -122,7 +122,7 @@ class LVHMSchedulingEnv(gym.Env):
         t0 = self._t
         travel = cfg.travel_time if inst.tray[j] != self._arm else 0.0
         attempt = self._attempts[j]
-        proc = inst.proc[j] * inst.noise[j, attempt] * (cfg.careful_time_factor if careful else 1.0)
+        proc = cfg.proc_time(inst.weight[j], inst.fragility[j], careful) * inst.noise[j, attempt]
         dropped = bool(inst.u_drop[j, attempt] < self.drop_probability(j, careful))
         t1 = t0 + travel + (cfg.drop_time_fraction * proc if dropped else proc)
 
@@ -184,10 +184,7 @@ class LVHMSchedulingEnv(gym.Env):
     # ------------------------------------------------------------------ helpers
 
     def drop_probability(self, j: int, careful: bool = False) -> float:
-        cfg, inst = self.cfg, self._inst
-        q = cfg.drop_base + cfg.drop_fragility * inst.fragility[j] + cfg.drop_weight * inst.weight[j] / cfg.weight_scale
-        q = min(q, cfg.drop_max)
-        return q * cfg.careful_drop_factor if careful else q
+        return float(self.cfg.drop_probability(self._inst.weight[j], self._inst.fragility[j], careful))
 
     def decision_state(self) -> DecisionState:
         inst = self._inst
