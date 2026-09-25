@@ -8,15 +8,10 @@ idle, a policy picks the next job and how carefully to handle it, trading on-tim
 against station switches and damage. Learned policies (masked PPO, masked double dueling DQN)
 are compared with six dispatch rules on identical shifts.
 
-## Quick start
-
-```bash
-uv sync                                               # Python 3.12 + dependencies
-uv run pytest                                         # environment and agent tests
-uv run python scripts/baseline_check.py               # six rules on 100 normal-day shifts
-uv run python scripts/baseline_check.py --busy        # busy day (arrival rate doubled)
-uv run --group sim python scripts/calibrate_so101.py  # re-measure SO-ARM101 timing in MuJoCo
-```
+> **Start here: [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
+> Open the notebook first. It walks through the whole experiment for Part C from top to bottom,
+> with every cell commented, and runs on Amazon SageMaker (T4 GPU) or locally. The rest of this
+> README documents the environment and design decisions behind it.
 
 ## Experiments notebook
 
@@ -45,6 +40,16 @@ from the Part B design. Both agents score each waiting job with the same shared-
 (`src/lvhm/agents/networks.py`): a per-job MLP plus a pooled whole-queue context (Deep Sets).
 Checkpoints are selected on 20 validation shifts (seed 20000), separate from the 100 test
 shifts (seed 10000).
+
+## Quick start
+
+```bash
+uv sync                                               # Python 3.12 + dependencies
+uv run pytest                                         # environment and agent tests
+uv run python scripts/baseline_check.py               # six rules on 100 normal-day shifts
+uv run python scripts/baseline_check.py --busy        # busy day (arrival rate doubled)
+uv run --group sim python scripts/calibrate_so101.py  # re-measure SO-ARM101 timing in MuJoCo
+```
 
 ## Environment
 
