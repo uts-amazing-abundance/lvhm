@@ -1,0 +1,22 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+runs/
+results/
+
+# Local AI tooling (oh-my-agent, agent skills); recreate with `oma install`
+.agents/
+.claude/
+.codex/
+.cursor/
+.grok/
+.qwen/
+.zcode/
+.serena/
+.mcp.json
+.github/prompts/
+.github/skills/
+.github/mcp.json
+AGENTS.md
+skills-lock.json
