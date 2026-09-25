@@ -12,11 +12,39 @@ are compared with six dispatch rules on identical shifts.
 
 ```bash
 uv sync                                               # Python 3.12 + dependencies
-uv run pytest                                         # environment tests
+uv run pytest                                         # environment and agent tests
 uv run python scripts/baseline_check.py               # six rules on 100 normal-day shifts
 uv run python scripts/baseline_check.py --busy        # busy day (arrival rate doubled)
 uv run --group sim python scripts/calibrate_so101.py  # re-measure SO-ARM101 timing in MuJoCo
 ```
+
+## Experiments notebook
+
+**Run the Part C experiments from [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
+It trains masked PPO and masked double dueling DQN (one run per seed), plots the learning
+curves, evaluates every policy on the four Part B test conditions, and writes the report tables
+to `results/partc_tables.md`. Each cell is commented; the settings (seeds, training steps,
+retraining) are in one cell near the top.
+
+- **Amazon SageMaker (T4 GPU):** start an instance with a T4 (for example `ml.g4dn.xlarge`)
+  and a Python 3.12 kernel, clone this repo, open the notebook and run its install cell once
+  (`%pip install -e '..[notebook]'`). The notebook uses CUDA when it is available.
+- **Locally:** `uv sync --extra notebook`, then
+  `uv run --extra notebook --with jupyterlab jupyter lab notebooks/experiments.ipynb`.
+
+The same training is available from the command line:
+
+```bash
+uv run python scripts/train_ppo.py --timesteps 300000 --seed 0 --device auto
+uv run python scripts/train_dqn.py --timesteps 300000 --seed 0 --device auto
+```
+
+PPO uses sb3-contrib's `MaskablePPO`. The DQN is plain PyTorch (`src/lvhm/agents/dqn.py`)
+because SB3's `DQN` supports neither action masking nor the double-DQN target and dueling head
+from the Part B design. Both agents score each waiting job with the same shared-weight network
+(`src/lvhm/agents/networks.py`): a per-job MLP plus a pooled whole-queue context (Deep Sets).
+Checkpoints are selected on 20 validation shifts (seed 20000), separate from the 100 test
+shifts (seed 10000).
 
 ## Environment
 
@@ -151,7 +179,8 @@ shoulder, against a servo force range of 3.35 N·m.
 | Weights of 20–230 g | Within the SO-ARM101 payload |
 | Two-station layout with per-station output spots | A single shared output spot would make tray switches free |
 | "Dropped once" flag added to the observation | A retried job risks being scrapped |
-| Planned for the agents: pooled queue context in the per-job network | Scoring each job from its own features alone cannot see the rest of the queue, and the PPO critic and dueling value stream need a whole-queue input |
+| Pooled queue context (Deep Sets) added to the per-job network | Scoring each job from its own features alone cannot see the rest of the queue, and the PPO critic and dueling value stream need a whole-queue input |
+| Unseen products are tested mixed into the familiar mix (P1–P4 plus P5 or P6) | A shift of a single product leaves little to sequence; the mix shows what a newly introduced product does to the whole schedule |
 
 ## Baseline results
 
@@ -193,12 +222,22 @@ src/lvhm/
   env.py         LVHMSchedulingEnv
   baselines.py   FCFS, SPT, LRF, EDF, NTF, Random
   evaluate.py    run a policy on fixed shifts, summarise metrics
+  experiments.py the four Part B test conditions, evaluation of many policies
   so101.py       SO101 IK, MuJoCo move timing, payload torque check (needs the sim group)
+  agents/
+    networks.py  shared-weight job encoder, pooled context, job scorer, value head
+    ppo.py       MaskablePPO policy, train_ppo, load_ppo
+    dqn.py       masked double dueling DQN, run_dqn, load_dqn
+    common.py    validation shifts, best-checkpoint selection, learning-curve CSV
+notebooks/
+  experiments.ipynb   Part C experiments (SageMaker T4 or local)
 scripts/
   baseline_check.py   rule results table and pre-training gap check
+  train_ppo.py        train and test masked PPO from the command line
+  train_dqn.py        train and test masked double dueling DQN from the command line
   calibrate_so101.py  writes assets/so101/cell_timing.json
 assets/so101/         vendored SO101 MJCF and meshes, cell_timing.json
-tests/                environment invariants and calibration consistency
+tests/                environment, agent and calibration tests
 ```
 
 ## Known limitations
