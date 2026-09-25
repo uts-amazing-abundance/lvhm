@@ -10,24 +10,35 @@ are compared with six dispatch rules on identical shifts.
 
 > **Start here: [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
 > Open the notebook first. It walks through the whole experiment for Part C from top to bottom,
-> with every cell commented, and runs on Amazon SageMaker (T4 GPU) or locally. The rest of this
-> README documents the environment and design decisions behind it.
+> with every cell commented. It is self-contained, so on Amazon SageMaker (T4 GPU) you only
+> upload that one file. The rest of this README documents the environment and design decisions
+> behind it.
 
 ## Experiments notebook
 
 **Run the Part C experiments from [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
-It trains masked PPO and masked double dueling DQN (one run per seed), plots the learning
-curves, evaluates every policy on the four Part B test conditions, and writes the report tables
-to `results/partc_tables.md`. Each cell is commented; the settings (seeds, training steps,
-retraining) are in one cell near the top.
+The notebook holds the whole environment, the six dispatch rules, masked PPO, masked double
+dueling DQN and the evaluation; it does not import this repository's package. It trains both
+agents (one run per seed), plots the learning curves, evaluates every policy on the four Part B
+test conditions, and writes the report tables to `results/partc_tables.md`. The settings (seeds,
+training steps, retraining) are in one cell near the top.
 
-- **Amazon SageMaker (T4 GPU):** start an instance with a T4 (for example `ml.g4dn.xlarge`)
-  and a Python 3.12 kernel, clone this repo, open the notebook and run its install cell once
-  (`%pip install -e '..[notebook]'`). The notebook uses CUDA when it is available.
-- **Locally:** `uv sync --extra notebook`, then
-  `uv run --extra notebook --with jupyterlab jupyter lab notebooks/experiments.ipynb`.
+**Amazon SageMaker (T4 GPU)**
 
-The same training is available from the command line:
+1. Download `notebooks/experiments.ipynb` from this repository.
+2. Upload it to SageMaker (JupyterLab: Upload Files) on an instance with a T4 GPU, for example
+   `ml.g4dn.xlarge`, and pick a PyTorch kernel.
+3. Run all cells. The first cell installs the packages it needs with pip
+   (`gymnasium`, `sb3-contrib`, `pandas`, `matplotlib`; torch comes with the PyTorch kernel).
+   Training uses CUDA when it is available.
+
+**Locally:** `uv sync --extra notebook`, then
+`uv run --extra notebook --with jupyterlab jupyter lab notebooks/experiments.ipynb`, and skip the
+pip cell.
+
+The notebook mirrors the code in `src/lvhm`, which the tests and command-line scripts use. A
+change to the environment or the agents has to be made in both places. The same training is
+available from the command line:
 
 ```bash
 uv run python scripts/train_ppo.py --timesteps 300000 --seed 0 --device auto
@@ -235,7 +246,7 @@ src/lvhm/
     dqn.py       masked double dueling DQN, run_dqn, load_dqn
     common.py    validation shifts, best-checkpoint selection, learning-curve CSV
 notebooks/
-  experiments.ipynb   Part C experiments (SageMaker T4 or local)
+  experiments.ipynb   self-contained Part C experiments (upload alone to SageMaker)
 scripts/
   baseline_check.py   rule results table and pre-training gap check
   train_ppo.py        train and test masked PPO from the command line
