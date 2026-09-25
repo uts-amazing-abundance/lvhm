@@ -11,7 +11,7 @@ from lvhm.config import EVAL_WEIGHTS, EnvConfig
 from lvhm.env import LVHMSchedulingEnv
 from lvhm.instance import ShiftInstance
 
-METRICS = ("on_time", "tardiness", "travel", "drops", "scrapped", "unfinished", "score")
+METRICS = ("on_time", "tardiness", "travel", "drops", "scrapped", "unfinished", "careful", "score")
 
 
 def run_episode(

@@ -100,7 +100,7 @@ class LVHMSchedulingEnv(gym.Env):
         self._t = 0.0
         self._arm = 0
         self._stats = dict.fromkeys(
-            ("decisions", "completed", "on_time", "late", "drops", "scrapped", "unfinished"), 0
+            ("decisions", "completed", "on_time", "late", "drops", "scrapped", "unfinished", "careful"), 0
         ) | dict.fromkeys(("tardiness", "travel", "score"), 0.0)
 
         self._admit(self._t)
@@ -157,6 +157,7 @@ class LVHMSchedulingEnv(gym.Env):
             reward -= cfg.unfinished_penalty * len(self._queue)
 
         self._stats["decisions"] += 1
+        self._stats["careful"] += careful
         self._stats["tardiness"] += late
         self._stats["travel"] += travel
         self._stats["score"] += reward
