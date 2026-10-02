@@ -1,0 +1,489 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Shared design and execution differences between Phase 2 and the camera workcell. An offline explanation without a quiz.">
+<title>Phase 2 and the camera workcell: experiment comparison</title>
+<style>
+:root{--bg:#f6f4ef;--surface:#fffefa;--soft:#eeece5;--text:#202a37;--muted:#4f5c6b;--border:#c8cdd0;--phase:#15558a;--phase-soft:#eaf3fb;--vision:#88451c;--vision-soft:#fff0e3;--accent:#235b4a;--accent-soft:#e7f1eb;--danger:#96342e;--focus:#6441bb;--shadow:0 12px 32px rgba(24,34,45,.06)}
+:root[data-theme="dark"]{--bg:#141a21;--surface:#1c2530;--soft:#26313e;--text:#edf2f8;--muted:#b7c4d4;--border:#586b80;--phase:#98cfff;--phase-soft:#223a50;--vision:#ffca9b;--vision-soft:#463527;--accent:#a0dbc0;--accent-soft:#253d35;--danger:#ffa79e;--focus:#c4b4ff;--shadow:none}
+@media(prefers-color-scheme:dark){:root:not([data-theme]){--bg:#141a21;--surface:#1c2530;--soft:#26313e;--text:#edf2f8;--muted:#b7c4d4;--border:#586b80;--phase:#98cfff;--phase-soft:#223a50;--vision:#ffca9b;--vision-soft:#463527;--accent:#a0dbc0;--accent-soft:#253d35;--danger:#ffa79e;--focus:#c4b4ff;--shadow:none}}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:85px}
+body{margin:0;background:var(--bg);color:var(--text);font-family:Pretendard,'Pretendard Variable','Apple SD Gothic Neo','Noto Sans CJK KR','Noto Sans CJK JP','Noto Sans CJK SC','Noto Sans CJK TC',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:16px;line-height:1.7}
+.page{max-width:860px;margin:0 auto;padding:28px 24px 60px}
+header{padding:16px 0 32px;border-bottom:1px solid var(--border)}
+.toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:28px}
+.eyebrow,.section-label{color:var(--muted);font-size:12px;letter-spacing:.12em;font-weight:750}
+button{font:inherit;cursor:pointer;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;min-height:44px}
+button:hover{background:var(--soft)}
+button:focus-visible,a:focus-visible,input:focus-visible,summary:focus-visible{outline:3px solid var(--focus);outline-offset:4px}
+h1{font-size:clamp(30px,5vw,46px);line-height:1.3;letter-spacing:-.035em;margin:0 0 18px;font-weight:780}
+h2{font-size:28px;line-height:1.35;letter-spacing:-.02em;margin:8px 0 20px}
+h3{font-size:21px;line-height:1.4;margin:30px 0 12px}
+h4{font-size:16px;margin:0 0 10px}
+p{margin:0 0 16px}
+.lead{font-size:18px;color:var(--muted);max-width:75ch}
+.source-pair{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 0}
+.badge{display:inline-block;font-size:12px;border:1px solid var(--border);border-radius:7px;padding:5px 9px;overflow-wrap:anywhere}
+.phase{color:var(--phase)}.vision{color:var(--vision)}
+.phase-bg{background:var(--phase-soft)}.vision-bg{background:var(--vision-soft)}
+nav{position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--border);padding:12px 0}
+nav ol{display:flex;flex-wrap:wrap;gap:8px 24px;list-style:none;margin:0;padding:0}
+nav a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:700;padding:4px 0;display:inline-block}
+nav a.active{color:var(--text);text-decoration:underline;text-underline-offset:6px}
+section{padding:44px 0 8px;scroll-margin-top:74px}
+a{color:var(--phase);text-underline-offset:3px}
+code,pre{font-family:ui-monospace,SFMono-Regular,Consolas,'Liberation Mono',monospace}
+code{font-size:.84em;overflow-wrap:anywhere}
+pre{background:var(--soft);border:1px solid var(--border);border-radius:10px;padding:18px;font-size:13px;line-height:1.65;white-space:pre-wrap;overflow-wrap:anywhere;overflow-x:auto;margin:14px 0}
+pre code{font-size:inherit}
+.evidence{font-size:12px;line-height:1.7;color:var(--muted);margin-top:12px}
+.evidence a{color:var(--muted)}
+.callout{background:var(--accent-soft);border-left:4px solid var(--accent);padding:18px 20px;border-radius:0 10px 10px 0;margin:22px 0}
+.callout p:last-child{margin-bottom:0}
+.note{font-size:14px;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--border);border-radius:12px;margin:18px 0;padding:14px 18px}
+summary{cursor:pointer;font-weight:650;min-height:30px}
+details>div{padding-top:18px}
+ul,ol{padding-left:24px}
+li{margin:6px 0}
+.table-wrap{overflow-x:auto;max-width:100%;border:1px solid var(--border);border-radius:12px;margin:18px 0;background:var(--surface)}
+table{width:100%;border-collapse:collapse;font-size:14px;line-height:1.65}
+th,td{text-align:left;vertical-align:top;padding:13px 15px;border-bottom:1px solid var(--border)}
+th{font-weight:750;background:var(--soft)}
+tr:last-child td{border-bottom:0}
+.wide-table{min-width:600px}
+.stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:22px 0}
+.stat{border:1px solid var(--border);border-radius:12px;padding:17px 12px;background:var(--surface)}
+.stat strong{display:block;font-size:28px;line-height:1.2}
+.stat span{font-size:12px;color:var(--muted)}
+.diagram-wrapper{overflow-x:auto;max-width:100%;margin:20px 0;border:1px solid var(--border);border-radius:14px;background:var(--surface);padding:20px}
+.diagram-wrapper svg{display:block}
+.flow-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.flow-lane{padding:16px;border:1px solid var(--border);border-radius:11px}
+.flow-lane ol{list-style:none;margin:0;padding:0}
+.flow-lane li{margin:0;padding:12px 9px;border:1px solid var(--border);border-radius:8px;background:var(--surface);text-align:center;font-size:14px}
+.flow-lane li+li{margin-top:22px;position:relative}
+.flow-lane li+li:before{content:"↓";position:absolute;top:-25px;left:50%;transform:translateX(-50%);color:var(--muted)}
+.arrow-data{display:block;font-size:12px;color:var(--muted);font-weight:450}
+.controls{display:flex;gap:18px;align-items:center;flex-wrap:wrap;border:1px solid var(--border);background:var(--surface);padding:14px 18px;border-radius:12px;margin:18px 0}
+.controls label{display:flex;gap:9px;align-items:center;font-size:14px;cursor:pointer}
+input[type="checkbox"]{width:19px;height:19px;accent-color:var(--accent)}
+input[type="range"]{width:160px;accent-color:var(--accent)}
+input[type="number"]{width:70px;min-height:40px;border:1px solid var(--border);border-radius:7px;background:var(--bg);color:var(--text);padding:6px;font:inherit}
+.job-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:22px}
+.jobs{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:7px}
+.jobs li{margin:0;border:1px solid var(--border);border-radius:8px;padding:10px 4px;text-align:center;font-size:13px;min-height:70px;line-height:1.4;background:var(--surface)}
+.jobs li strong{display:block}
+.jobs li small{display:block;font-size:10px;color:var(--muted)}
+.jobs .chosen{border:2px solid var(--accent);background:var(--accent-soft);padding:9px 3px}
+.jobs .hidden-job{border:1px dashed var(--danger);color:var(--danger);background:var(--soft)}
+.tray-label{display:block;color:var(--muted);font-size:12px;margin:10px 0 6px}
+.pending{padding:11px 0 0;color:var(--muted);font-size:12px}
+.live-result{border:1px solid var(--border);border-radius:10px;background:var(--accent-soft);padding:15px 18px;line-height:1.7}
+.live-result p:last-child{margin-bottom:0}
+.dimension-board{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.dimension-card{padding:16px;border:1px solid var(--border);border-radius:10px}
+.dim-number{font-size:38px;font-weight:800;line-height:1.2;margin:14px 0 8px}
+.dim-formula{font-size:15px}
+.feature-extra{background:var(--vision-soft);padding:12px;border:1px solid var(--border);border-radius:8px;font-size:13px;margin-top:12px}
+[hidden]{display:none!important}
+.formula{padding:15px;background:var(--soft);border:1px solid var(--border);border-radius:10px;margin:14px 0;font-size:14px;line-height:1.8}
+.compare-two{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;margin:18px 0}
+.compare-two article{border:1px solid var(--border);border-radius:12px;padding:20px;background:var(--surface)}
+.compare-two ul{font-size:14px}
+footer{border-top:1px solid var(--border);margin-top:42px;padding-top:24px;color:var(--muted);font-size:12px;line-height:1.8}
+footer dl{display:grid;grid-template-columns:95px minmax(0,1fr);gap:8px 16px}
+footer dt{font-weight:700}footer dd{margin:0;overflow-wrap:anywhere}
+@media(max-width:600px){.page{padding:18px 16px 40px}.toolbar{align-items:flex-start}.flow-board,.job-board,.dimension-board,.compare-two{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,minmax(0,1fr))}h2{font-size:25px}.diagram-wrapper{padding:14px}.evidence code{font-size:11px}.controls{gap:12px}th,td{padding:11px}footer dl{grid-template-columns:1fr;gap:3px}.toolbar .eyebrow{max-width:180px}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*:before,*:after{animation:none!important;transition:none!important}}
+@media print{nav,.toolbar button,.controls{display:none}body{background:var(--surface);font-size:11pt}.page{max-width:none;padding:0}section{break-before:auto}h2,h3{break-after:avoid}pre,.diagram-wrapper,table{break-inside:avoid}.table-wrap{overflow:visible}.wide-table{min-width:0}.evidence a{text-decoration:none}.stat strong{font-size:24px}}
+
+header{padding-bottom:18px}
+.toolbar{margin-bottom:16px}
+h1{font-size:clamp(29px,4vw,38px);margin-bottom:12px}
+.lead{font-size:16px;margin-bottom:0}
+#experiment{padding-top:28px}
+.experiment-intro{font-size:14px;color:var(--muted);margin-bottom:12px}
+.experiment-diagram{padding:0;overflow-x:auto;background:transparent;border:0;margin:16px 0}
+.experiment-scenes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.experiment-lane{min-width:0;border:1px solid var(--border);border-radius:14px;background:var(--surface);overflow:hidden}
+.experiment-lane>h3{font-size:17px;margin:0;padding:12px 16px 4px}
+.experiment-lane>.lane-kind{font-size:12px;padding:0 16px;margin:0;color:var(--muted)}
+.experiment-lane svg{width:100%;height:auto;display:block}
+.experiment-lane .scene-status{min-height:62px;font-size:13px;line-height:1.55;padding:11px 16px;border-top:1px solid var(--border);margin:0;background:var(--soft)}
+.experiment-lane .scene-clock{font-size:12px;color:var(--muted);padding:9px 16px 12px;margin:0}
+.scene-label{fill:var(--muted);font-size:12px}
+.scene-job-label{fill:var(--text);font-size:13px;font-weight:700}
+.scene-due{fill:var(--muted);font-size:10px}
+.scene-pocket{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+.scene-job rect{fill:var(--surface);stroke:var(--border);stroke-width:1.5}
+.scene-job.available rect{stroke:var(--vision);stroke-width:2}
+.scene-job.selected rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:3}
+.scene-job.blocked rect{fill:var(--soft);stroke:var(--danger);stroke-dasharray:4 3;stroke-width:2}
+.scene-job.blocked .scene-job-label{fill:var(--danger)}
+.scene-job.completed rect{stroke-dasharray:3 4;fill:var(--soft)}
+.scene-job.completed text{visibility:hidden}
+.scene-model{fill:var(--phase-soft);stroke:var(--phase);stroke-width:1.5}
+.scene-output{fill:var(--accent-soft);stroke:var(--accent);stroke-width:1.5}
+.scene-arm-link{fill:none;stroke:var(--muted);stroke-width:12;stroke-linecap:round;stroke-linejoin:round}
+.scene-joint{fill:var(--surface);stroke:var(--muted);stroke-width:3}
+.scene-scan{fill:var(--vision);fill-opacity:.10;stroke:var(--vision);stroke-width:1.5;stroke-dasharray:5 4}
+.scene-camera{fill:var(--vision-soft);stroke:var(--vision);stroke-width:2}
+.scene-token rect{fill:var(--accent-soft);stroke:var(--accent);stroke-width:2}
+.scene-token text{fill:var(--text);font-size:13px;font-weight:700}
+.experiment-stagebar{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px;margin:14px 0}
+.experiment-stagebar button{min-width:0;min-height:38px;font-size:12px;padding:6px 4px;line-height:1.35;background:var(--surface)}
+.experiment-stagebar button[aria-current="step"]{border:2px solid var(--accent);background:var(--accent-soft);font-weight:700}
+.experiment-controls{margin:12px 0;gap:8px;padding:12px}
+.experiment-controls button{font-size:13px}
+.experiment-controls label{margin-left:auto}
+.experiment-scrub{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--muted);margin:10px 0 14px}
+.experiment-scrub input{flex:1;min-width:90px;width:auto}
+.experiment-result{font-size:14px;min-height:74px}
+.experiment-pipeline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;font-size:12px;margin:12px 0 0}
+.experiment-pipeline>div{border:1px solid var(--border);border-radius:10px;padding:12px 14px;background:var(--surface)}
+.experiment-pipeline h4{font-size:13px;margin:0 0 8px}
+.experiment-pipeline ol{list-style:none;padding:0;margin:0}
+.experiment-pipeline li{margin:0;line-height:1.6}
+.experiment-pipeline li+li:before{content:'↓';display:block;color:var(--muted)}
+.experiment-sources{margin:12px 0}
+button:disabled{cursor:default}
+@media(max-width:600px){.experiment-scenes,.experiment-pipeline{grid-template-columns:1fr}.experiment-controls label{margin:4px 0 0;width:100%}.experiment-stagebar{grid-template-columns:repeat(3,minmax(0,1fr))}.experiment-lane .scene-status{min-height:0}.experiment-controls{gap:7px}.experiment-controls button{padding:6px 10px}.experiment-result{min-height:0}}
+@media print{.experiment-controls,.experiment-scrub,.experiment-stagebar{display:none}.experiment-lane{break-inside:avoid}.experiment-scenes{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+</style>
+<script>
+(function(){var saved=null;try{saved=localStorage.getItem('comparison-theme')}catch(e){}var mode=(saved==='light'||saved==='dark')?saved:(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light');document.documentElement.dataset.theme=mode})();
+</script>
+</head>
+<body>
+<div class="page">
+<header>
+<div class="toolbar"><span class="eyebrow">NOTEBOOK COMPARISON · 2026.10.02</span><button id="theme-toggle" type="button" aria-label="Change color theme" aria-pressed="false">Change theme</button></div>
+<h1>Phase 2 vs camera workcell</h1>
+<p class="lead">Watch the experiment first, then read the execution and evaluation differences.</p>
+
+</header>
+<nav aria-label="Contents"><ol><li><a href="#experiment">01 Watch the experiment</a></li><li><a href="#background">02 Differences</a></li><li><a href="#code">03 Code and evaluation</a></li></ol></nav>
+<main>
+<section id="experiment">
+<span class="section-label">01 / WATCH THE EXPERIMENT</span>
+<h2>Same orders. Different available jobs.</h2>
+<p class="experiment-intro">One decision with nine arrived jobs. Both use the earliest deadline rule. J9 has the earliest deadline, but each environment exposes a different candidate set.</p>
+<div id="experiment-player" data-step="0" data-playing="false">
+<div class="diagram-wrapper experiment-diagram">
+<div class="experiment-scenes">
+<article class="experiment-lane">
+<h3 class="phase">Phase 2</h3><p class="lane-kind">Queue and formula events</p>
+<svg id="phase-scene" viewBox="0 0 380 320" role="img" aria-labelledby="phase-scene-title phase-scene-desc">
+<title id="phase-scene-title">Phase 2 scheduling environment</title>
+<desc id="phase-scene-desc">The eight oldest queue jobs are available. J9 waits outside that set. The earliest deadline rule selects J1, and a formula model calculates its outcome.</desc>
+<text x="18" y="28" class="scene-label">Queue · arrival order</text>
+<rect x="12" y="40" width="356" height="124" rx="12" fill="var(--phase-soft)" stroke="var(--phase)" stroke-width="1.5"/>
+<g id="phase-scene-jobs"></g>
+<rect x="208" y="178" width="142" height="33" rx="6" fill="var(--soft)" stroke="var(--muted)" stroke-dasharray="4 3"/>
+<text x="218" y="199" class="scene-label">J9 · outside the 8 slots</text>
+<path d="M89 166V230M165 255H215" fill="none" stroke="var(--phase)" stroke-width="2"/>
+<path d="M85 224L89 230L93 224M209 251L215 255L209 259" fill="none" stroke="var(--phase)" stroke-width="2"/>
+<rect x="18" y="232" width="146" height="50" rx="9" class="scene-model"/>
+<text x="91" y="261" text-anchor="middle" class="scene-job-label">Formula event</text>
+<rect x="215" y="232" width="146" height="50" rx="9" class="scene-output"/>
+<text id="phase-output-label" x="288" y="261" text-anchor="middle" class="scene-job-label">Outcome</text>
+<g id="phase-scene-token" class="scene-token" visibility="hidden"><rect x="-19" y="-15" width="38" height="30" rx="6"/><text x="0" y="5" text-anchor="middle">J1</text></g>
+<text x="18" y="308" class="scene-label">Duration and drop outcome from formulas</text>
+</svg>
+<p id="phase-scene-status" class="scene-status">Expose the eight oldest jobs: J1–J8.</p>
+<p class="scene-clock">Model time: processing + tray movement</p>
+</article>
+<article class="experiment-lane">
+<h3 class="vision">Camera workcell</h3><p class="lane-kind">Physical pockets, wrist camera, robot arm</p>
+<svg id="vision-scene" viewBox="0 0 380 320" role="img" aria-labelledby="vision-scene-title vision-scene-desc">
+<title id="vision-scene-title">Camera workcell scheduling environment</title>
+<desc id="vision-scene-desc">Four pockets per tray hold J1 to J4 in tray A and J7 to J9 in tray B. J5 and J6 wait for tray A pockets. A wrist camera scans the trays. The rule selects detected J9, and the robot arm moves it to output.</desc>
+<text x="16" y="28" class="scene-label">Feed queue A: J5, J6 waiting</text>
+<rect x="12" y="44" width="152" height="127" rx="11" fill="var(--vision-soft)" stroke="var(--border)"/>
+<rect x="216" y="44" width="152" height="127" rx="11" fill="var(--vision-soft)" stroke="var(--border)"/>
+<text x="24" y="67" class="scene-label">Tray A</text><text x="228" y="67" class="scene-label">Tray B</text>
+<g id="vision-scene-jobs"></g>
+<g class="scene-pocket"><rect x="294" y="124" width="61" height="33" rx="5"/><text x="324" y="145" text-anchor="middle" class="scene-due" stroke="none">Empty</text></g>
+<path id="vision-scan-cone" class="scene-scan" visibility="hidden" d="M95 185L12 45L164 45Z"/>
+<rect x="275" y="239" width="93" height="61" rx="9" class="scene-output"/>
+<text x="321" y="290" text-anchor="middle" class="scene-label">Output</text>
+<path id="vision-arm-link" class="scene-arm-link" d="M190 285L180 228L190 199"/>
+<circle cx="190" cy="285" r="16" class="scene-joint"/>
+<circle id="vision-elbow" cx="180" cy="228" r="7" class="scene-joint"/>
+<g id="vision-wrist" transform="translate(190 199)"><rect x="-10" y="-17" width="20" height="13" rx="3" class="scene-camera"/><circle cx="0" cy="-10" r="3" fill="var(--vision)"/><path d="M-9 0V9H-5M9 0V9H5" fill="none" stroke="var(--muted)" stroke-width="3"/><circle r="4" class="scene-joint"/></g>
+<g id="vision-scene-token" class="scene-token" visibility="hidden"><rect x="-19" y="-15" width="38" height="30" rx="6"/><text id="vision-token-label" x="0" y="5" text-anchor="middle">J9</text></g>
+<text x="16" y="310" class="scene-label">Wrist camera scans before the next choice</text>
+</svg>
+<p id="vision-scene-status" class="scene-status">Fill each tray's pockets; J5 and J6 wait.</p>
+<p class="scene-clock">Physics time: scans + movement + picking</p>
+</article>
+</div>
+</div>
+<div class="experiment-stagebar" role="group" aria-label="Choose an animation stage">
+<button type="button" data-scene-step="0" aria-current="step">1 · Candidates</button>
+<button type="button" data-scene-step="1">2 · Scan A</button>
+<button type="button" data-scene-step="2">3 · Scan B</button>
+<button type="button" data-scene-step="3">4 · Choose</button>
+<button type="button" data-scene-step="4">5 · Execute</button>
+<button type="button" data-scene-step="5">6 · Record</button>
+</div>
+<div class="controls experiment-controls">
+<button id="scene-play" type="button" aria-pressed="false">Play</button>
+<button id="scene-replay" type="button">Replay</button>
+<button id="scene-next" type="button">Next step</button>
+<label><input id="hide-j9" type="checkbox">Miss J9 in the camera view</label>
+</div>
+<label class="experiment-scrub" for="scene-progress">Scene progress <input id="scene-progress" type="range" min="0" max="5" step="0.01" value="0"><output id="scene-stage" for="scene-progress">1 / 6</output></label>
+<p id="job-result" class="live-result experiment-result" role="status" aria-live="polite">Compare the queue candidate set with occupied tray pockets.</p>
+<p class="note">Illustrative animation of one decision. Motion and playback speed are schematic, not measured robot performance.</p>
+</div>
+<h3>Where the experiment runs</h3>
+<div class="diagram-wrapper experiment-diagram">
+<div class="experiment-pipeline" role="img" aria-label="Phase 2 trains, validates, and tests in a formula event model. The camera experiment measures physics first, trains in a fast measured model, selects checkpoints in camera physics, and tests three execution environments.">
+<div><h4 class="phase">Phase 2</h4><ol><li>Formula event model</li><li>Train + validate in that model</li><li>Test in the same model</li></ol></div>
+<div><h4 class="vision">Camera workcell</h4><ol><li>Camera + physics measurements</li><li>Train in the fast measured model</li><li>Select in camera physics</li><li>Test fast, camera, and reference-position models</li></ol></div>
+</div>
+</div>
+<details class="experiment-sources"><summary>Source for this scene</summary><div><p class="evidence">Queue candidates: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L428"><code>experiments_phase2.ipynb:428</code></a><br>Pockets and camera masks: <a href="../notebooks/vision_workcell_experiments.ipynb#L2201"><code>vision_workcell_experiments.ipynb:2201</code></a><br>Physical execution: <a href="../notebooks/vision_workcell_experiments.ipynb#L1166"><code>vision_workcell_experiments.ipynb:1166</code></a></p></div></details>
+</section>
+
+<section id="background">
+<span class="section-label">02 / COMPARISON</span><h2>Differences at a glance</h2>
+
+<div class="table-wrap"><table class="wide-table"><thead><tr><th scope="col">Item</th><th scope="col" class="phase">Phase 2</th><th scope="col" class="vision">Camera workcell</th></tr></thead><tbody>
+<tr><td>Job candidates</td><td>The eight oldest jobs in the queue</td><td>Four physical pockets per tray; eight total</td></tr>
+<tr><td>Available actions</td><td>Exclude empty slots</td><td>Require an occupied pocket and sufficient camera confidence</td></tr>
+<tr><td>Duration and drops</td><td>Mass/risk formulas with preset random draws</td><td>Measured simulation samples or physical execution outcomes</td></tr>
+<tr><td>Observation</td><td>Read queue features directly</td><td>Scan both trays in sequence with the wrist camera</td></tr>
+<tr><td>Training</td><td>Formula-based event environment</td><td>Fast event environment built from camera and picking measurements</td></tr>
+<tr><td>Final checkpoint</td><td>Best validation score in the same event model</td><td>Keep up to three fast-model candidates, then select by camera and physics validation</td></tr>
+<tr><td>Test environments</td><td>One event environment</td><td>Fast model, camera physics, and reference-position physics</td></tr>
+<tr><td>Shift cutoff</td><td>The last job can finish after 480 seconds</td><td>Interrupt work when the time budget runs out</td></tr>
+<tr><td>Solver reference</td><td>Optimize score with drops removed</td><td>Use shorter measured durations and relaxed constraints to bound on-time completions</td></tr>
+<tr><td>Uncertainty</td><td>Average seeds, then use a t-distribution interval for paired shift differences</td><td>Resample seeds and shifts separately</td></tr>
+<tr><td>Extra tests</td><td>Main scheduling conditions</td><td>Optional lighting and color tests, disabled by default</td></tr>
+<tr><td>Outputs</td><td>Learning curves, scores, statistics, and solver tables</td><td>Also measurements, camera gap, physics validation, and picking videos</td></tr>
+</tbody></table></div>
+</section>
+<section id="code">
+<span class="section-label">03 / CODE</span><h2>Read the implementation differences</h2>
+<h3 id="state-action">1. Input meanings and scaling</h3>
+<div class="table-wrap"><table class="wide-table"><thead><tr><th scope="col">Value</th><th scope="col" class="phase">Phase 2</th><th scope="col" class="vision">Camera version</th></tr></thead><tbody>
+<tr><td>Slot index</td><td>Position among the eight oldest queued jobs</td><td>Fixed physical pocket index</td></tr><tr><td>Processing time</td><td>Formula duration for normal handling, scaled by 8 seconds</td><td>Measured mean for the pocket and tray movement, scaled by 15 seconds</td></tr><tr><td>Retry state</td><td>A previous drop</td><td>A previous failed pick</td></tr><tr><td>Backlog</td><td>Observation clipped at 32 jobs</td><td>Observation clipped at 64 jobs</td></tr><tr><td>Action mask</td><td>Occupied slot</td><td>Occupied pocket with camera detection</td></tr>
+</tbody></table></div>
+<p>A queue index and a pocket index can refer to different jobs. Processing-time and backlog scales also differ, so saved models are not interchangeable.</p>
+<div class="compare-two"><article><h4 class="phase">How Phase 2 reads a job</h4><pre><code>vis = np.array(self._queue[: cfg.num_slots], dtype=int)
+j = self._queue[slot]
+proc = cfg.proc_time(inst.weight[j], inst.fragility[j], careful) * inst.noise[j, attempt]</code></pre></article><article><h4 class="vision">How the camera version reads available pockets</h4><pre><code>    def action_masks(self):
+        valid = (self._slots &gt;= 0) &amp; (self._confidence &gt;= CELL.confidence_threshold)
+        return np.tile(valid &amp; (not self._done), self.num_modes)</code></pre></article></div>
+<p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L428"><code>notebooks/experiments_phase2.ipynb:428</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L2201"><code>notebooks/vision_workcell_experiments.ipynb:2201</code></a></p><p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L560"><code>notebooks/experiments_phase2.ipynb:560</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L2409"><code>notebooks/vision_workcell_experiments.ipynb:2409</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L402"><code>notebooks/vision_workcell_experiments.ipynb:402</code></a></p>
+<h3 id="execution">2. Observation and motion consume shift time</h3>
+<p>A Phase 2 step calculates tray movement and picking time, then checks the drop draw. The camera version feeds pockets, scans with the wrist camera, moves and settles, picks, checks output, and removes the object. Waiting jobs accumulate lateness during these operations.</p>
+<p>The fast camera model matches measured rows by mass, handling risk, pocket, handling mode, and tray movement. Physics evaluation simulates contact and friction, and records camera detection and picking failures.</p>
+<p>Camera failures, retries, and recovery consume time and affect completion counts. Read those diagnostics alongside improvement over each environment's baselines.</p>
+<div class="callout"><p><strong>The 480-second cutoff also differs.</strong> Phase 2's <code>step</code> calculates a started job's finish time, which can exceed the shift end. The camera version passes the remaining time budget to the executor, interrupts work that exceeds it, and counts that job as unfinished.</p></div>
+<p class="note">The camera score uses simulated physics time. Rendering and process communication time are excluded.</p>
+<p class="evidence">Source: <a href="../notebooks/vision_workcell_experiments.ipynb#L1166"><code>notebooks/vision_workcell_experiments.ipynb:1166</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L1969"><code>notebooks/vision_workcell_experiments.ipynb:1969</code></a></p><p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L428"><code>notebooks/experiments_phase2.ipynb:428</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L2201"><code>notebooks/vision_workcell_experiments.ipynb:2201</code></a></p>
+<h3 id="training">3. Added physics validation</h3>
+<p>The camera version keeps up to three fast-model checkpoints per seed, then selects among them on 20 camera and physics validation shifts. Phase 2 selects directly from event-model validation.</p>
+<div class="diagram-wrapper">
+<svg viewBox="0 0 740 174" width="100%" role="img" aria-labelledby="selection-title selection-desc" style="min-width:620px">
+<title id="selection-title">Checkpoint selection</title><desc id="selection-desc">Compare up to three fast-model checkpoints on 20 camera and physics validation shifts. Select the best checkpoint per seed, then test it.</desc>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8Z" fill="var(--muted)"/></marker></defs>
+<rect x="8" y="46" width="164" height="82" rx="10" fill="var(--soft)" stroke="var(--border)"/><text x="90" y="78" text-anchor="middle" fill="var(--text)" font-size="14">Train in fast model</text><text x="90" y="104" text-anchor="middle" fill="var(--muted)" font-size="12">Up to 3 per seed</text>
+<path d="M174 87H258" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"/><text x="214" y="61" text-anchor="middle" fill="var(--muted)" font-size="12">Same orders</text>
+<rect x="268" y="46" width="190" height="82" rx="10" fill="var(--vision-soft)" stroke="var(--border)"/><text x="363" y="78" text-anchor="middle" fill="var(--text)" font-size="14">Camera + physics</text><text x="363" y="104" text-anchor="middle" fill="var(--muted)" font-size="12">20 shifts · select best</text>
+<path d="M460 87H548" stroke="var(--muted)" stroke-width="2" marker-end="url(#arrow)"/><text x="503" y="61" text-anchor="middle" fill="var(--muted)" font-size="12">Freeze the choice</text>
+<rect x="558" y="46" width="174" height="82" rx="10" fill="var(--accent-soft)" stroke="var(--border)"/><text x="645" y="78" text-anchor="middle" fill="var(--text)" font-size="14">Separate test shifts</text><text x="645" y="104" text-anchor="middle" fill="var(--muted)" font-size="12">Held-out shifts</text>
+</svg></div>
+<p>This extra validation checks whether fast-model rankings hold in physical simulation.</p>
+<p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L1018"><code>notebooks/experiments_phase2.ipynb:1018</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L2820"><code>notebooks/vision_workcell_experiments.ipynb:2820</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L3604"><code>notebooks/vision_workcell_experiments.ipynb:3604</code></a></p>
+<h3 id="evaluation">4. Three evaluation environments</h3>
+<div class="table-wrap"><table><thead><tr><th scope="col">Environment</th><th scope="col">Purpose</th></tr></thead><tbody>
+<tr><td>Fast measured model<br><code>surrogate</code></td><td>Scheduling performance in the training model</td></tr><tr><td>Camera physics<br><code>physics_camera</code></td><td>Final performance with camera detection and physical picking</td></tr><tr><td>Reference-position physics<br><code>physics_oracle</code></td><td>Comparison with simulator reference positions supplied to the pick controller</td></tr>
+</tbody></table></div>
+<p>Camera and reference-position runs share orders, scenes, and movement and observation procedures. Their score gap includes sensing and position errors, plus changes in later choices and contact outcomes.</p>
+<p>Lighting and color tests run when <code>RUN_APPEARANCE_TESTS=True</code>. They run only in the two physics environments, because image changes do not affect the fast measured model. Results are separate from the six main scheduling conditions.</p>
+<details><summary>Show evaluation environment definitions</summary><div><pre><code>backends = {&#x27;surrogate&#x27;: lambda: EventBackend(),
+            &#x27;physics_camera&#x27;: lambda: PhysicsBackend(WORKER),
+            &#x27;physics_oracle&#x27;: lambda: PhysicsBackend(WORKER, oracle=True)}</code></pre></div></details>
+<div class="controls"><label><input id="quick-budget" type="checkbox">Show check-run counts</label></div>
+<div id="budget-result" class="live-result" role="status" aria-live="polite"></div>
+<p class="note">These counts assume that models for all seeds are ready. They come from settings, not new experiment results. Each baseline runs once; learned policies run for each seed. Totals exclude physics candidate validation, solver runs, and optional lighting/color tests.</p>
+<p class="evidence">Source: <a href="../notebooks/vision_workcell_experiments.ipynb#L3700"><code>notebooks/vision_workcell_experiments.ipynb:3700</code></a></p>
+<h3 id="solver">5. Solver objectives and references</h3>
+<div class="compare-two"><article><h4 class="phase">Phase 2</h4><ul><li>Use the realized processing-time noise.</li><li>Remove drops and careful handling.</li><li>Keep tray movement, lateness, and unfinished-job costs.</li><li>Maximize score.</li></ul><p class="note">Record a feasible schedule's value <code>clairvoyant</code> and the proven upper bound <code>bound</code> separately.</p></article><article><h4 class="vision">Camera workcell</h4><ul><li>Use the minimum durations available in measured samples.</li><li>Remove scan, travel, retry, and failure constraints.</li><li>Remove lateness, travel, drop, and unfinished-job costs from the objective.</li><li>Maximize on-time completions.</li></ul><p class="note">Multiply the upper bound on on-time completions by the reward to obtain a fast-model score ceiling.</p></article></div>
+<p>The camera solver's short durations come from the fast model's sample set. Physical execution can be faster or slower than those samples. This bound does not establish an optimality gap for camera physics results.</p><p class="note">The code's <code>physics_score_upper_bound</code> multiplies total job count by the on-time reward. It is a separate, simple ceiling.</p>
+<div class="table-wrap"><table><thead><tr><th scope="col">Reported improvement fraction</th><th scope="col">Implementation</th></tr></thead><tbody>
+<tr><td>Phase 2</td><td>For each shift, measure improvement between the best baseline and the solver's feasible schedule value, then average those fractions.</td></tr><tr><td>Camera version</td><td>Divide mean improvement over the composite careful-handling baseline by the mean gap to the fast-model upper bound. Report by training seed.</td></tr></tbody></table></div>
+<p class="note">The reference values and order of averaging differ. These fractions cannot be compared directly. A feasible schedule value and an upper bound are also different quantities.</p>
+<p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L1543"><code>notebooks/experiments_phase2.ipynb:1543</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L2652"><code>notebooks/vision_workcell_experiments.ipynb:2652</code></a></p>
+<h3 id="statistics">6. Seed variation and multiple comparisons</h3>
+<div class="table-wrap"><table class="wide-table"><thead><tr><th scope="col">Item</th><th scope="col" class="phase">Phase 2</th><th scope="col" class="vision">Camera version</th></tr></thead><tbody>
+<tr><td>Confidence interval</td><td>Average seeds, then calculate a t-distribution interval for paired shift score differences</td><td>Resample seeds and paired shifts separately</td></tr>
+<tr><td>Paired test</td><td>Per-shift seed means in the familiar condition</td><td>Per-shift seed means in each condition</td></tr>
+<tr><td>Comparison scope</td><td>Learning methods versus baselines in the familiar condition</td><td>All main conditions per environment; extra camera tests form a separate group</td></tr>
+<tr><td>Holm adjustment</td><td>Apply only the rank multiplier to each probability value</td><td>Also apply a cumulative maximum after sorting</td></tr>
+</tbody></table></div>
+<p>Intervals based only on per-shift seed means do not separately resample differences between training seeds. The camera version resamples both seeds and shifts.</p>
+<details><summary>Show statistics code and an adjustment example</summary><div>
+<h4>Seed × shift resampling</h4><pre><code>runs = rng.integers(n_runs, size=n_runs)
+shifts = rng.integers(n_shifts, size=n_shifts)
+values.append(float(matrix[np.ix_(runs, shifts)].mean()))</code></pre>
+<h4>Cumulative Holm adjustment</h4><pre><code>for rank, index in enumerate(order):
+    maximum = max(maximum, (len(values)-rank)*values[index])
+    adjusted[index] = min(1., maximum)</code></pre>
+<p>For example probability values 0.010, 0.040, and 0.041, rank multipliers alone produce 0.030, 0.080, and 0.041. A cumulative maximum produces 0.030, 0.080, and 0.080. This can change the decision for the last comparison.</p>
+<p class="note">These values are illustrative, not test results. Phase 2 statistics code is unchanged.</p>
+</div></details>
+<p class="evidence">Source: <a href="https://github.com/uts-amazing-abundance/lvhm/blob/df5ad5759736020fe284fa242d1ee3c2c6b396be/notebooks/experiments_phase2.ipynb#L2158"><code>notebooks/experiments_phase2.ipynb:2158</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L3794"><code>notebooks/vision_workcell_experiments.ipynb:3794</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L3808"><code>notebooks/vision_workcell_experiments.ipynb:3808</code></a></p>
+<h3 id="runtime">7. Runtime, resume, and outputs</h3>
+<ul><li><strong>Runtime:</strong> Phase 2 uses a standard training environment. The camera version uses Python 3.12 and Isaac Sim 6.0.0.1 worker processes on the same Linux or Windows computer, with a supported NVIDIA graphics card.</li><li><strong>Small runs:</strong> Phase 2's <code>smoke</code> uses one seed, 3,000 steps, three validation shifts, and five test shifts. The camera version's <code>quick</code> uses one seed, 2,048 steps, two validation shifts, and two test shifts, with 30-second shifts and two main conditions.</li><li><strong>Settings cells:</strong> Phase 2 selects settings from the <code>PROFILES</code> dictionary. The camera version runs a full-settings cell, then a separate small-run override cell.</li><li><strong>Resume:</strong> Full runs save resume state every 10,000 steps in Phase 2 and every 25,000 steps in the camera version. The camera version also restores the fast environment and execution model state, and checks configuration and measurement hashes. This does not resume a running physics simulation.</li><li><strong>Extra outputs:</strong> Measurement tables, shared orders, physics validation scores, camera/reference-position gaps, and videos from both cameras.</li></ul>
+<p class="evidence">Source: <a href="../notebooks/vision_workcell_experiments.ipynb#L3100"><code>notebooks/vision_workcell_experiments.ipynb:3100</code></a><br><a href="../notebooks/vision_workcell_experiments.ipynb#L4069"><code>notebooks/vision_workcell_experiments.ipynb:4069</code></a></p>
+</section>
+</main>
+<footer aria-label="Source provenance">
+<details><summary>Source and scope</summary><dl><dt>Comparison basis</dt><dd>Notebook snapshot: <code>df5ad5759736020fe284fa242d1ee3c2c6b396be</code>.</dd>
+<dt>Generated</dt><dd><time datetime="2026-10-02T16:07:30.558496+09:00">2026-10-02T16:07:30.558496+09:00</time> · Asia/Seoul</dd>
+<dt>Source files</dt><dd><code>notebooks/experiments_phase2.ipynb</code><br><code>notebooks/vision_workcell_experiments.ipynb</code></dd>
+<dt>Excerpts and exclusions</dt><dd>Both complete files were compared. Only relevant code is quoted. No input files were excluded. Source line numbers refer to raw notebook JSON.</dd>
+<dt>Code discovery</dt><dd>Serena located paths and content. Notebook symbol extraction is unsupported, so JSON and Python syntax were read directly.</dd>
+<dt>Scope</dt><dd>Implementation differences only. Example jobs are illustrative. No new training or physics run. Quiz omitted as requested.</dd>
+</dl></details>
+</footer>
+</div>
+<script>
+(function(){
+'use strict';
+var root=document.documentElement;
+var themeButton=document.getElementById('theme-toggle');
+function themeLabel(){var dark=root.dataset.theme==='dark';themeButton.textContent=dark?'Light theme':'Dark theme';themeButton.setAttribute('aria-pressed',String(dark));themeButton.setAttribute('aria-label',dark?'Switch to light theme':'Switch to dark theme')}
+themeLabel();
+themeButton.addEventListener('click',function(){root.dataset.theme=root.dataset.theme==='dark'?'light':'dark';try{localStorage.setItem('comparison-theme',root.dataset.theme)}catch(e){}themeLabel()});
+var quick=document.getElementById('quick-budget');
+function renderBudget(){
+ var check=quick.checked,phaseCount=check?330:17400,visionCount=check?132:52200;
+ document.getElementById('budget-result').textContent=check?
+ 'Check runs: Phase 2 uses (9 baselines + 2 learning methods × 1 seed) × 6 conditions × 5 shifts = '+phaseCount.toLocaleString('en-US')+' shifts. The camera version uses the same 11 runs × 2 conditions × 2 shifts × 3 environments = '+visionCount.toLocaleString('en-US')+' shifts. These small-run budgets differ.':
+ 'Full runs: 9 baselines + 2 learning methods × 10 seeds = 29 runs. Phase 2 uses 29 × 6 conditions × 100 shifts = '+phaseCount.toLocaleString('en-US')+' shifts. The camera version applies 3 environments for '+visionCount.toLocaleString('en-US')+' shifts, including 34,800 physics shifts.';
+}
+quick.addEventListener('change',renderBudget);renderBudget();
+if('IntersectionObserver' in window){
+ var anchors=Array.from(document.querySelectorAll('nav a'));
+ var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting){anchors.forEach(function(anchor){var active=anchor.getAttribute('href')==='#'+entry.target.id;anchor.classList.toggle('active',active);if(active){anchor.setAttribute('aria-current','location')}else{anchor.removeAttribute('aria-current')}})}})},{rootMargin:'-10% 0px -65% 0px'});
+ document.querySelectorAll('main>section').forEach(function(section){observer.observe(section)});
+}
+})();
+</script>
+<script>
+(function(){
+'use strict';
+var svgNS='http://www.w3.org/2000/svg';
+var jobs=[{id:'J1',due:125},{id:'J2',due:135},{id:'J3',due:145},{id:'J4',due:155},{id:'J5',due:165},{id:'J6',due:175},{id:'J7',due:150},{id:'J8',due:140},{id:'J9',due:112}];
+var player=document.getElementById('experiment-player');
+var hideJ9=document.getElementById('hide-j9');
+var play=document.getElementById('scene-play');
+var replay=document.getElementById('scene-replay');
+var next=document.getElementById('scene-next');
+var progress=document.getElementById('scene-progress');
+var phaseStatus=document.getElementById('phase-scene-status');
+var visionStatus=document.getElementById('vision-scene-status');
+var result=document.getElementById('job-result');
+var stageLabel=document.getElementById('scene-stage');
+var phaseToken=document.getElementById('phase-scene-token');
+var visionToken=document.getElementById('vision-scene-token');
+var phaseOutput=document.getElementById('phase-output-label');
+var cone=document.getElementById('vision-scan-cone');
+var wrist=document.getElementById('vision-wrist');
+var arm=document.getElementById('vision-arm-link');
+var elbow=document.getElementById('vision-elbow');
+var stageButtons=Array.from(document.querySelectorAll('[data-scene-step]'));
+var reduced=matchMedia('(prefers-reduced-motion: reduce)');
+var phaseCards=[],visionCards=[];
+function svg(tag,attrs,label){var node=document.createElementNS(svgNS,tag);Object.keys(attrs).forEach(function(key){node.setAttribute(key,attrs[key])});if(label)node.textContent=label;return node}
+function card(parent,job,x,y,w,h){
+ var node=svg('g',{'class':'scene-job','data-job':job.id});
+ node.appendChild(svg('rect',{x:x,y:y,width:w,height:h,rx:6}));
+ node.appendChild(svg('text',{x:x+w/2,y:y+15,'text-anchor':'middle','class':'scene-job-label'},job.id));
+ node.appendChild(svg('text',{x:x+w/2,y:y+h-6,'text-anchor':'middle','class':'scene-due'},'due '+job.due+' s'));
+ parent.appendChild(node);return {node:node,job:job,x:x+w/2,y:y+h/2};
+}
+jobs.slice(0,8).forEach(function(job,i){phaseCards.push(card(document.getElementById('phase-scene-jobs'),job,22+(i%4)*86,52+Math.floor(i/4)*52,77,44))});
+[0,1,2,3,6,7,8].forEach(function(index,i){var tray=i<4?0:1,position=tray?i-4:i;visionCards.push(card(document.getElementById('vision-scene-jobs'),jobs[index],25+tray*204+(position%2)*65,80+Math.floor(position/2)*44,61,33))});
+var cursor=0,playing=false,frame=0,last=0,lastAnnouncement=-1,autoStarted=false;
+var stageNames=['Candidates','Scan tray A','Scan tray B','Choose the next job','Execute','Record the result'];
+var phaseMessages=['Expose the eight oldest jobs: J1–J8.','Read job values directly. J1 has the earliest available deadline.','Calculate J1 duration and outcome in the formula model.','J1 is complete. J9 was outside this decision\'s candidate set.','J1 is complete in the event model.','Record the calculated duration and outcome for J1.'];
+function lerp(a,b,t){return a+(b-a)*t}
+function interpolate(a,b,t){return [lerp(a[0],b[0],t),lerp(a[1],b[1],t)]}
+function setPosition(node,point){node.setAttribute('transform','translate('+point[0].toFixed(2)+' '+point[1].toFixed(2)+')')}
+function chosenCard(){return visionCards.filter(function(c){return !(hideJ9.checked&&c.job.id==='J9')}).reduce(function(a,b){return a.job.due<b.job.due?a:b})}
+function render(force){
+ var step=Math.min(5,Math.floor(cursor)),fraction=reduced.matches?0:cursor-step;
+ var chosen=chosenCard(),job=chosen.job.id,target=[chosen.x,chosen.y];
+ player.dataset.step=String(step);player.dataset.playing=String(playing);
+ progress.value=String(cursor);stageLabel.value=(step+1)+' / 6';stageLabel.textContent=stageLabel.value;
+ progress.setAttribute('aria-valuetext',stageNames[step]);
+ play.textContent=playing?'Pause':'Play';play.setAttribute('aria-pressed',String(playing));
+ next.disabled=step===5;
+ stageButtons.forEach(function(button){if(Number(button.dataset.sceneStep)===step)button.setAttribute('aria-current','step');else button.removeAttribute('aria-current')});
+ phaseCards.forEach(function(c){c.node.setAttribute('class','scene-job'+(c.job.id==='J1'?(step>=2?' completed':step===1?' selected':''):''))});
+ visionCards.forEach(function(c,i){var cls='scene-job';if((i<4&&step>=1)||(i>=4&&step>=2))cls+=' available';if(c.job.id==='J9'&&hideJ9.checked&&step>=2)cls+=' blocked';if(c.job.id===job&&step>=3)cls+=step>=4?' completed':' selected';c.node.setAttribute('class',cls)});
+ phaseToken.setAttribute('visibility',step===2?'visible':'hidden');
+ if(step===2){var p=fraction<.55?interpolate([phaseCards[0].x,phaseCards[0].y],[91,254],fraction/.55):interpolate([91,254],[288,254],(fraction-.55)/.45);setPosition(phaseToken,p)}
+ phaseOutput.textContent=step>=3?'J1 completed':'Outcome';
+ var poses=[[190,199],[95,185],[285,185],target,target,[321,258]];
+ var pose=poses[step];
+ if(step===1)pose=interpolate([190,199],poses[1],Math.min(1,fraction*3));
+ if(step===2)pose=interpolate(poses[1],poses[2],Math.min(1,fraction*3));
+ if(step===3)pose=interpolate(poses[2],target,Math.min(1,fraction*3));
+ if(step<=3&&(!playing||reduced.matches))pose=poses[step];
+ if(step===4)pose=interpolate(target,[321,258],fraction);
+ var elbowPoint=[lerp(180,pose[0],.28),226];
+ arm.setAttribute('d','M190 285L'+elbowPoint[0]+' '+elbowPoint[1]+'L'+pose[0]+' '+pose[1]);
+ elbow.setAttribute('cx',elbowPoint[0]);elbow.setAttribute('cy',elbowPoint[1]);setPosition(wrist,pose);
+ cone.setAttribute('visibility',step===1||step===2?'visible':'hidden');
+ if(step===1||step===2){var left=step===1?12:216;cone.setAttribute('d','M'+pose[0]+' '+pose[1]+'L'+left+' 44L'+(left+152)+' 44Z')}
+ visionToken.setAttribute('visibility',step>=4?'visible':'hidden');
+ document.getElementById('vision-token-label').textContent=job;
+ setPosition(visionToken,step===5?[321,258]:pose);
+ if(force||lastAnnouncement!==step){
+  phaseStatus.textContent=phaseMessages[step];
+  var messages=['Fill four pockets per tray. J5 and J6 wait for tray A space.','Move the wrist camera to scan tray A. The scan consumes physics time.','Scan tray B. '+(hideJ9.checked?'J9 is present but not detected.':'J9 is present and detected.'),'Choose '+job+' from detected pockets; its deadline is '+chosen.job.due+' s.','Move, grasp '+job+', and transfer it to output.','Record '+job+' completion, including observation and movement time.'];
+  visionStatus.textContent=messages[step];
+  document.getElementById('vision-scene-desc').textContent='Four pockets per tray hold J1 to J4 in tray A and J7 to J9 in tray B. J5 and J6 wait for tray A pockets. '+(hideJ9.checked?'The camera misses J9, so the earliest deadline rule selects J1.':'The camera detects J9, so the earliest deadline rule selects J9.')+' The robot arm transfers the selected job to output.';
+  result.textContent=step<3?'Stage '+(step+1)+' / 6: '+stageNames[step]+'. Phase 2 reads queue data; the camera workcell must observe its pockets.':'Phase 2 choice: J1 (due 125 s). Camera choice: '+job+' (due '+chosen.job.due+' s). '+(hideJ9.checked?'J9 is excluded by the camera mask.':'J9 is outside Phase 2\'s eight-job window but occupies a camera workcell pocket.');
+  lastAnnouncement=step;
+ }
+}
+function pause(){playing=false;cancelAnimationFrame(frame);last=0;render(false)}
+function tick(now){
+ if(!playing)return;
+ if(last)cursor=Math.min(5,cursor+(now-last)/1800);
+ last=now;render(false);
+ if(cursor>=5){playing=false;last=0;render(false);return}
+ frame=requestAnimationFrame(tick);
+}
+function start(){if(cursor>=5)cursor=0;playing=true;last=0;render(true);frame=requestAnimationFrame(tick)}
+function seek(value){pause();cursor=Math.max(0,Math.min(5,Number(value)));render(true)}
+play.addEventListener('click',function(){autoStarted=true;if(playing)pause();else start()});
+replay.addEventListener('click',function(){autoStarted=true;pause();cursor=0;start()});
+next.addEventListener('click',function(){autoStarted=true;seek(Math.floor(cursor)+1)});
+progress.addEventListener('input',function(){autoStarted=true;seek(progress.value)});
+stageButtons.forEach(function(button){button.addEventListener('click',function(){autoStarted=true;seek(button.dataset.sceneStep)})});
+hideJ9.addEventListener('change',function(){autoStarted=true;seek(3)});
+document.addEventListener('visibilitychange',function(){if(document.hidden)pause()});
+reduced.addEventListener('change',function(){if(reduced.matches)pause()});
+render(true);
+if('IntersectionObserver' in window){var observer=new IntersectionObserver(function(entries){entries.forEach(function(entry){if(entry.isIntersecting&&!autoStarted&&!reduced.matches){autoStarted=true;start()}else if(!entry.isIntersecting&&playing)pause()})},{threshold:.15});observer.observe(player)}
+})();
+
+</script>
+</body>
+</html>

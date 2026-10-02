@@ -53,6 +53,9 @@ shifts (seed 10000).
 
 ## Camera workcell notebook
 
+Open the [animated comparison with Phase 2](docs/phase2-vs-vision-workcell.html)
+in a browser to compare queue scheduling with camera observation and robot picking.
+
 [`notebooks/vision_workcell_experiments.ipynb`](notebooks/vision_workcell_experiments.ipynb)
 runs the WOWROBO SO-ARM101 experiment with a single wrist-mounted RGB camera.
 It includes the workcell, encoder-based camera poses, sequential tray scans, RGB localization,
