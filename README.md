@@ -57,8 +57,8 @@ shifts (seed 10000).
 [`notebooks/vision_workcell_experiments.ipynb`](notebooks/vision_workcell_experiments.ipynb)
 runs the WOWROBO SO-ARM101 experiment with a single wrist-mounted RGB camera.
 It includes the workcell, encoder-based camera poses, sequential tray scans, RGB localization,
-approach re-observation, contact-based picking, and physical pick/scan calibration,
-PPO/DQN training, six rules in normal-only and mode-enabled variants, ATCSR+C, Rolling CP-SAT, physical checkpoint
+approach re-observation, contact-based picking, and simulation pick/scan measurements,
+PPO/DQN training, the nine Phase 2 baselines, physical checkpoint
 selection, camera/oracle evaluation, appearance shifts, result export, and learned-policy videos.
 
 Use Python 3.12 for both the notebook kernel and the Isaac Sim 6.0.0.1 worker
@@ -66,13 +66,13 @@ on an RTX-capable system. The worker runs in a separate process and uses the 6.0
 Set `ISAAC_COMMAND` near the top of the notebook; use `[sys.executable]` if Isaac Sim
 is installed in the kernel environment. The notebook downloads pinned LeHome SO101 assets
 and generates its worker and shared perception module with `%%writefile` cells.
-Both processes import the same generated module from `runs/vision_workcell/v2/<profile>/<mode>/worker/`.
+Both processes import the same generated module from `runs/vision_workcell/v3/<profile>/<mode>/worker/`.
 Install `imageio-ffmpeg==0.6.0` in the worker environment for video encoding.
 Use `MODE = 'quick'` for an optional short execution check; `full` uses ten training
 seeds per algorithm, 300,000 steps per seed, 20 validation shifts and 100 test shifts per
-condition/run. Six scheduling conditions include an out-of-range drop penalty; two more
-conditions change lighting and object colour. Results and resumable training/evaluation
-traces go to `runs/vision_workcell/v2/<profile>/<mode>/`.
+condition/run. The six scheduling conditions match Phase 2, including damage penalties
+of 1.5 and 2.4. Set `RUN_APPEARANCE_TESTS = True` to add supplementary lighting and colour tests.
+Results and resumable training/evaluation traces go to `runs/vision_workcell/v3/<profile>/<mode>/`.
 Set `MODE` in the setup cell, then run the full settings and quick overrides cells in order.
 All quick-mode changes are in one cell; paths and configuration hashes are derived afterward.
 Checkpoint and evaluation reuse depend on `EXPERIMENT_VERSION`, settings and measurement
@@ -85,15 +85,26 @@ per pocket, giving 95 values. These inputs are not required for camera use, and 
 has not been established. Both profiles use the same RGB executor, action masks, timing and
 reward, with separate checkpoint and result paths.
 
-The eight primary baselines are six mode-enabled rules, validation-tuned ATCSR+C and
-Rolling CP-SAT. The six normal-only rules remain handling-mode ablations. Rolling CP-SAT
-optimises a deterministic approximation of the visible queue; its solver status, gap,
-planning time and fallback count are recorded. Clairvoyant CP-SAT separately bounds an
-optimistic relaxation of the calibrated event model. It is not a ceiling for physical
-execution, and the position oracle is not a future-arrival oracle. Reports include paired
-bootstrap intervals, win rates, Wilcoxon tests with global Holm correction, and event-model
-headroom. Wilcoxon uses one mean-across-seeds difference per shift; the bootstrap also
-accounts for training-seed variation.
+The camera extension follows the unchanged `notebooks/experiments_phase2.ipynb` reference:
+FCFS, SPT, LRF, EDF, NTF, Random, ATCSR, ATCSR+C and EDF+C. The first seven use normal
+handling; the final two choose careful handling using the Phase 2 decision equation and
+measured executor estimates. The priority rule is tuned in normal mode on the same validation
+parameter grid. The score uses the five Phase 2 components. Non-drop failures and scrap are
+separate diagnostics; observation, feeding and recovery delays still consume shift time.
+
+The generator reproduces Phase 2 arrivals, features, trays and deadlines for the same seed
+and full settings, and exports `comparison_orders.json`. Deadlines use the fixed Phase 2
+reference-time formula. Execution differs: Phase 2 exposes the oldest queued jobs, while the
+camera extension exposes physical pockets and uses measured motion and contact outcomes.
+Compare improvement over the common baselines within each environment.
+
+The constraint solver runs only as a clairvoyant evaluation reference on the first 20
+familiar shifts. It bounds an optimistic relaxation of the calibrated event model, not
+physical execution. The position oracle is not a future-arrival oracle. This notebook
+retains seed-aware bootstrap intervals, paired win/tie rates, signed-rank tests and correct
+step-down Holm adjustment within each backend and comparison scope. Phase 2's statistical
+reporting remains unchanged. The signed-rank test uses one mean-across-seeds difference per
+shift; bootstrap intervals also account for training-seed variation.
 
 Training smoke checks exercise PPO/DQN save/load/continue before the full run. PPO
 checkpoints follow rollout updates; DQN checkpoints include the replay buffer. Both save
@@ -103,21 +114,21 @@ checked against uninterrupted training with synthetic event-model fixtures.
 Before calibration and training, the Isaac sample cells pick one P2 block using wrist RGB
 and normal handling. They display the pre-grasp camera image, a workcell/wrist video and
 the pick outcome. A failed pick stops execution before calibration. The MP4, RGB image and
-result JSON are saved in `runs/vision_workcell/v2/<profile>/<mode>/results/isaac_sample/`.
+result JSON are saved in `runs/vision_workcell/v3/<profile>/<mode>/results/isaac_sample/`.
 
 After evaluation, the video cells load the selected PPO/DQN checkpoints for seed 0 and run
 the same familiar orders and scene. The default demonstration is 60 seconds at 15 FPS
 (30 seconds in `quick`). Set `DEMO_SHIFT_SECONDS`, `DEMO_TRAINING_SEED`, and `DEMO_POLICIES`
-to change it or add `EDF_modes`. Each H.264 MP4 shows a workcell overview beside wrist RGB
+to change it or add `EDF+C`. Each H.264 MP4 shows a workcell overview beside wrist RGB
 with time, selected pocket and handling mode. The overview is for recording; the policy
 continues to use wrist RGB. Videos, checkpoint/settings metadata and event logs are saved
-in `runs/vision_workcell/v2/<profile>/<mode>/results/videos/` and played in the notebook.
+in `runs/vision_workcell/v3/<profile>/<mode>/results/videos/` and played in the notebook.
 
 Notebook structure, RGB perception, asset kinematics, environment semantics and short
 PPO/DQN training, the pre-training sample flow and failure handling, recording control flow,
 H.264 encoding/decoding and notebook video embedding
 have been checked locally with fixtures. PhysX contact picking and RTX rendering have
-not been executed locally. Physical calibration gates must pass before training. Scan motion,
+not been executed locally. Simulation measurement checks must pass before training. Scan motion,
 settling and capture time count toward the shift; scan station switches also incur the movement penalty.
 The camera optical transform is an initial simulation setting; real hardware needs measured
 intrinsics, distortion and hand-eye calibration. Camera/bracket payload and geometry are not modeled.
