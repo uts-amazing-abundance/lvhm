@@ -10,17 +10,16 @@ are compared with six dispatch rules on identical shifts.
 
 > **Start here: [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
 > Open the notebook first. It walks through the whole experiment for Part C from top to bottom,
-> with every cell commented. It is self-contained, so on Amazon SageMaker (T4 GPU) you only
-> upload that one file. The rest of this README documents the environment and design decisions
+> with every cell commented. On Amazon SageMaker (T4 GPU), upload the notebook.
+> The rest of this README documents the environment and design decisions
 > behind it.
 
 ## Experiments notebook
 
 **Run the Part C experiments from [`notebooks/experiments.ipynb`](notebooks/experiments.ipynb).**
 The notebook holds the whole environment, the six dispatch rules, masked PPO, masked double
-dueling DQN and the evaluation; it does not import this repository's package. It trains both
-agents (one run per seed), plots the learning curves, evaluates every policy on the four Part B
-test conditions, and writes the report tables to `results/partc_tables.md`. The settings (seeds,
+dueling DQN and the evaluation. It trains both agents (one run per seed), plots the learning
+curves, evaluates every policy on the four Part B test conditions, and writes the report tables to `results/partc_tables.md`. The settings (seeds,
 training steps, retraining) are in one cell near the top.
 
 **Amazon SageMaker (T4 GPU)**
@@ -66,24 +65,22 @@ on an RTX-capable system. The worker runs in a separate process and uses the 6.0
 Set `ISAAC_COMMAND` near the top of the notebook; use `[sys.executable]` if Isaac Sim
 is installed in the kernel environment. The notebook downloads pinned LeHome SO101 assets
 and generates its worker and shared perception module with `%%writefile` cells.
-Both processes import the same generated module from `runs/vision_workcell/v3/<profile>/<mode>/worker/`.
+Both processes import the same generated module from `runs/vision_workcell/v4/<mode>/worker/`.
 Install `imageio-ffmpeg==0.6.0` in the worker environment for video encoding.
 Use `MODE = 'quick'` for an optional short execution check; `full` uses ten training
 seeds per algorithm, 300,000 steps per seed, 20 validation shifts and 100 test shifts per
 condition/run. The six scheduling conditions match Phase 2, including damage penalties
 of 1.5 and 2.4. Set `RUN_APPEARANCE_TESTS = True` to add supplementary lighting and colour tests.
-Results and resumable training/evaluation traces go to `runs/vision_workcell/v3/<profile>/<mode>/`.
+Results and resumable training/evaluation traces go to `runs/vision_workcell/v4/<mode>/`.
 Set `MODE` in the setup cell, then run the full settings and quick overrides cells in order.
 All quick-mode changes are in one cell; paths and configuration hashes are derived afterward.
 Checkpoint and evaluation reuse depend on `EXPERIMENT_VERSION`, settings and measurement
 data hashes. Increment the version when changing perception, execution, reward or policy logic.
 
-The default `OBSERVATION_PROFILE = 'scheduling'` has 79 values: eight pockets with nine
-features each, plus seven global features. Wrist RGB still drives the pick executor.
-The optional `'vision'` profile adds RGB confidence and processing-time standard deviation
-per pocket, giving 95 values. These inputs are not required for camera use, and their benefit
-has not been established. Both profiles use the same RGB executor, action masks, timing and
-reward, with separate checkpoint and result paths.
+The policy receives 79 values: eight pockets with nine scheduling features each,
+plus seven global features. The wrist camera controls the pick executor.
+Camera confidence controls visibility masks; it is not a network input.
+The observation schema is fixed, with no alternate input profile.
 
 The camera extension follows the unchanged `notebooks/experiments_phase2.ipynb` reference:
 FCFS, SPT, LRF, EDF, NTF, Random, ATCSR, ATCSR+C and EDF+C. The first seven use normal
@@ -114,7 +111,7 @@ checked against uninterrupted training with synthetic event-model fixtures.
 Before calibration and training, the Isaac sample cells pick one P2 block using wrist RGB
 and normal handling. They display the pre-grasp camera image, a workcell/wrist video and
 the pick outcome. A failed pick stops execution before calibration. The MP4, RGB image and
-result JSON are saved in `runs/vision_workcell/v3/<profile>/<mode>/results/isaac_sample/`.
+result JSON are saved in `runs/vision_workcell/v4/<mode>/results/isaac_sample/`.
 
 After evaluation, the video cells load the selected PPO/DQN checkpoints for seed 0 and run
 the same familiar orders and scene. The default demonstration is 60 seconds at 15 FPS
@@ -122,7 +119,7 @@ the same familiar orders and scene. The default demonstration is 60 seconds at 1
 to change it or add `EDF+C`. Each H.264 MP4 shows a workcell overview beside wrist RGB
 with time, selected pocket and handling mode. The overview is for recording; the policy
 continues to use wrist RGB. Videos, checkpoint/settings metadata and event logs are saved
-in `runs/vision_workcell/v3/<profile>/<mode>/results/videos/` and played in the notebook.
+in `runs/vision_workcell/v4/<mode>/results/videos/` and played in the notebook.
 
 Notebook structure, RGB perception, asset kinematics, environment semantics and short
 PPO/DQN training, the pre-training sample flow and failure handling, recording control flow,
@@ -327,7 +324,7 @@ src/lvhm/
     dqn.py       masked double dueling DQN, run_dqn, load_dqn
     common.py    validation shifts, best-checkpoint selection, learning-curve CSV
 notebooks/
-  experiments.ipynb   self-contained Part C experiments (upload alone to SageMaker)
+  experiments.ipynb   Part C experiments
   vision_workcell_experiments.ipynb   RGB/Isaac workcell experiment
 scripts/
   baseline_check.py   rule results table and pre-training gap check
