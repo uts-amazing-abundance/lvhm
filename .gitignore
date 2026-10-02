@@ -20,3 +20,18 @@ results/
 .github/mcp.json
 AGENTS.md
 skills-lock.json
+.DS_Store
+
+# oma docs generated artifacts
+docs/generated/
+
+# oh-my-agent runtime (local artifacts — do not commit)
+.agents/oma-config.local.cue
+.agents/oma-config.local.yaml
+.antigravitycli/
+.agents/results/
+.agents/state/
+.agents/backup/
+docs/plans/
+.migration-backup/
+.qwen/tmp/
