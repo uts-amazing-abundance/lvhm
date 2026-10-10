@@ -1,0 +1,36 @@
+{
+  "ppo": {
+    "0": {
+      "steps": 100352,
+      "finished": true,
+      "best_validation_score": 44.28812715354079
+    },
+    "1": {
+      "steps": 100352,
+      "finished": true,
+      "best_validation_score": 44.039609148421235
+    },
+    "2": {
+      "steps": 100352,
+      "finished": true,
+      "best_validation_score": 44.89383826467892
+    }
+  },
+  "dqn": {
+    "0": {
+      "steps": 100000,
+      "finished": true,
+      "best_validation_score": 54.21125604532242
+    },
+    "1": {
+      "steps": 100000,
+      "finished": true,
+      "best_validation_score": 53.33695458568345
+    },
+    "2": {
+      "steps": 100000,
+      "finished": true,
+      "best_validation_score": 54.22371438616341
+    }
+  }
+}

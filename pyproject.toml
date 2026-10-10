@@ -3,12 +3,17 @@ name = "lvhm"
 version = "0.1.0"
 description = "RL job sequencing for a low-volume high-mix SO-ARM101 work cell (43008 Assignment 3)"
 requires-python = ">=3.12"
-# Loose lower bounds so `pip install -e .` keeps a preinstalled CUDA build of torch
+# Loose lower bounds so `pip install -e .` keeps a preinstalled CUDA build of torch.
+# Note: sb3-contrib >= 2.9 pulls stable-baselines3 >= 2.9, which requires torch >= 2.8 and will
+# replace an older CUDA build with the CPU-only PyPI wheel. Pin sb3-contrib below 2.9 if you need
+# to keep a CUDA torch older than 2.8.
 dependencies = [
     "gymnasium>=1.0",
     "numpy>=1.26",
     "sb3-contrib>=2.4",
     "torch>=2.2",
+    "ortools>=9.10",   # CP-SAT: the clairvoyant bound and the rolling-horizon baseline
+    "scipy>=1.11",     # Wilcoxon signed-rank test for the paired comparison
 ]
 
 [project.optional-dependencies]
