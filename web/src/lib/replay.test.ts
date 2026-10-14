@@ -56,6 +56,7 @@ describe('queue reconstruction', () => {
       expect(s.careful).toBe(m.careful);
       expect(s.travel).toBeCloseTo(m.travel, 2);
       expect(s.score).toBeCloseTo(m.score, 2);
+      expect(s.completedByTray[0] + s.completedByTray[1]).toBe(m.completed);
     }
   });
 
@@ -98,6 +99,30 @@ describe('dispatch rules', () => {
       const i = rulePick(r, visible, 0, 7);
       expect(i).toBeGreaterThanOrEqual(0);
       expect(i).toBeLessThan(visible.length);
+    }
+  });
+});
+
+describe('tray pockets', () => {
+  it('keep each job in one pocket for its whole stay and never share a pocket', () => {
+    const shift = ds.conditions[3].shifts[0]; // busy day: trays overflow
+    for (const policy of ['DQN', 'FCFS']) {
+      const replay = new Replay(ds, shift, shift.runs[policy]);
+      const seen = new Map<number, number>();
+      for (let t = 0; t <= replay.horizon; t += 0.5) {
+        const used = new Set<string>();
+        for (const e of replay.queueAt(t)) {
+          if (e.pocket == null) continue;
+          expect(e.pocket).toBeLessThan(K_SLOTS);
+          const key = `${e.job.tray}:${e.pocket}`;
+          expect(used.has(key)).toBe(false);
+          used.add(key);
+          const prev = seen.get(e.job.id);
+          if (prev != null) expect(e.pocket).toBe(prev);
+          seen.set(e.job.id, e.pocket);
+        }
+      }
+      expect(seen.size).toBeGreaterThan(20);
     }
   });
 });

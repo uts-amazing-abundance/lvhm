@@ -14,13 +14,13 @@ const TRAY_X = [120, 360];
 const TRAY_Y = 262;
 const TRAY_W = 150;
 const TRAY_H = 52;
-const OUT = { x: 240, y: 88 };
+/** One output spot per station, inboard of its tray, as in lvhm/so101.py. */
+const OUT = [{ x: 185, y: 118 }, { x: 295, y: 118 }];
 const SHOULDER = { x: 240, y: 212 };
 const L1 = 92;
 const L2 = 86;
 const HOVER_Y = 168;
 const DOWN_Y = 236;
-const POCKETS = 8;
 
 export class SchematicCell implements CellRenderer {
   private readonly layer: { static: SVGGElement; jobs: SVGGElement; arm: SVGGElement; held: SVGGElement; text: SVGGElement };
@@ -45,8 +45,10 @@ export class SchematicCell implements CellRenderer {
       svg('rect', { x: x - TRAY_W / 2, y: TRAY_Y - TRAY_H / 2, width: TRAY_W, height: TRAY_H, rx: 6, fill: cssVar('--tray'), stroke: cssVar('--tray-edge') }, g);
       svg('text', { x, y: TRAY_Y + TRAY_H / 2 + 14, 'text-anchor': 'middle' }, g).textContent = `tray ${i}`;
     });
-    svg('rect', { x: OUT.x - 50, y: OUT.y - 20, width: 100, height: 40, rx: 6, fill: 'none', stroke: cssVar('--tray-edge'), 'stroke-dasharray': '4 3' }, g);
-    svg('text', { x: OUT.x, y: OUT.y - 26, 'text-anchor': 'middle' }, g).textContent = 'output';
+    OUT.forEach((o, i) => {
+      svg('rect', { x: o.x - 34, y: o.y - 16, width: 68, height: 32, rx: 6, fill: 'none', stroke: cssVar('--tray-edge'), 'stroke-dasharray': '4 3' }, g);
+      svg('text', { x: o.x, y: o.y - 22, 'text-anchor': 'middle' }, g).textContent = `output ${i}`;
+    });
     // base
     svg('rect', { x: SHOULDER.x - 26, y: SHOULDER.y + 2, width: 52, height: 22, rx: 4, fill: cssVar('--ink-2') }, g);
     svg('circle', { cx: SHOULDER.x, cy: SHOULDER.y, r: 9, fill: cssVar('--ink') }, g);
@@ -55,7 +57,7 @@ export class SchematicCell implements CellRenderer {
   update(state: ReplayState, chosenJob: number | null): void {
     this.drawJobs(state, chosenJob);
     this.drawArm(state);
-    const placed = svg('text', { x: OUT.x, y: OUT.y + 5, 'text-anchor': 'middle', style: `fill:${cssVar('--ink-2')};font-size:12px;font-weight:600` }, this.layer.text);
+    const placed = svg('text', { x: 240, y: 60, 'text-anchor': 'middle', style: `fill:${cssVar('--ink-2')};font-size:12px;font-weight:600` }, this.layer.text);
     placed.textContent = `${state.stats.completed} placed`;
   }
 
@@ -68,12 +70,11 @@ export class SchematicCell implements CellRenderer {
   private drawJobs(state: ReplayState, chosenJob: number | null): void {
     const g = this.layer.jobs;
     g.innerHTML = '';
-    const perTray: number[] = [0, 0];
     const overflow: number[] = [0, 0];
     for (const e of state.queue) {
       const tray = e.job.tray;
-      const k = perTray[tray]++;
-      if (k >= POCKETS) { overflow[tray]++; continue; }
+      const k = e.pocket;
+      if (k == null) { overflow[tray]++; continue; }
       const carrying = state.inHand?.id === e.job.id && state.pickProgress > 0.3;
       if (carrying) continue;
       const { x, y } = this.pocketPos(tray, k);
@@ -116,17 +117,18 @@ export class SchematicCell implements CellRenderer {
       const p = state.pickProgress;
       const isDrop = state.current.outcome === Outcome.Drop || state.current.outcome === Outcome.Scrap;
       const tx = TRAY_X[state.armTo];
+      const out = OUT[state.armTo];
       if (p < 0.3) { // descend
         wx = tx; wy = HOVER_Y + (DOWN_Y - HOVER_Y) * easeInOut(p / 0.3);
       } else if (p < 0.45) { // lift with the part
         wx = tx; wy = DOWN_Y - (DOWN_Y - HOVER_Y) * easeInOut((p - 0.3) / 0.15); carrying = state.inHand;
       } else if (p < 0.8) { // carry to the output area
         const q = easeInOut((p - 0.45) / 0.35);
-        if (isDrop && q > 0.5) { dropped = true; wx = tx + (OUT.x - tx) * 0.5; wy = HOVER_Y + (OUT.y + 10 - HOVER_Y) * 0.5; }
-        else { wx = tx + (OUT.x - tx) * q; wy = HOVER_Y + (OUT.y + 10 - HOVER_Y) * q; carrying = isDrop && q > 0.5 ? null : state.inHand; }
+        if (isDrop && q > 0.5) { dropped = true; wx = tx + (out.x - tx) * 0.5; wy = HOVER_Y + (out.y + 10 - HOVER_Y) * 0.5; }
+        else { wx = tx + (out.x - tx) * q; wy = HOVER_Y + (out.y + 10 - HOVER_Y) * q; carrying = isDrop && q > 0.5 ? null : state.inHand; }
       } else { // return to hover above the tray
         const q = easeInOut((p - 0.8) / 0.2);
-        const fx = isDrop ? tx + (OUT.x - tx) * 0.5 : OUT.x, fy = isDrop ? HOVER_Y + (OUT.y + 10 - HOVER_Y) * 0.5 : OUT.y + 10;
+        const fx = isDrop ? tx + (out.x - tx) * 0.5 : out.x, fy = isDrop ? HOVER_Y + (out.y + 10 - HOVER_Y) * 0.5 : out.y + 10;
         wx = fx + (tx - fx) * q; wy = fy + (HOVER_Y - fy) * q; dropped = isDrop;
       }
     } else if (state.phase === 'finished') {
@@ -145,7 +147,7 @@ export class SchematicCell implements CellRenderer {
     if (carrying) this.chip(held, wx, wy + 18, carrying, { chosen: true, late: false, retry: false, beyond: false });
     if (dropped && state.current) {
       const tx = TRAY_X[state.armTo];
-      const dx = tx + (OUT.x - tx) * 0.5, dy = TRAY_Y - 30;
+      const dx = tx + (OUT[state.armTo].x - tx) * 0.5, dy = TRAY_Y - 30;
       svg('text', { x: dx, y: dy, 'text-anchor': 'middle', style: `fill:${cssVar('--critical')};font-size:12px;font-weight:700` }, text).textContent =
         state.current.outcome === Outcome.Scrap ? `#${state.current.job} dropped · scrapped` : `#${state.current.job} dropped · re-queued`;
     }

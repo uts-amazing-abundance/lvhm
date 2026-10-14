@@ -22,6 +22,8 @@ export interface ArmPose {
   dropped: boolean;
   /** The part has been released on the output spot during this pick. */
   placed: boolean;
+  /** The part is no longer in its tray pocket: in the gripper, placed, or dropped. */
+  lifted: boolean;
 }
 
 export const GRIPPER_JOINT = 5;
@@ -43,7 +45,7 @@ const DROP_AT = 0.62;
 
 export function poseFor(state: ReplayState, wp: Waypoints, grip: GripperRange): ArmPose {
   const rest = (tray: number) => withGripper(wp[`out${tray}_hover`], grip.open);
-  const none = (q: number[]): ArmPose => ({ q, carrying: false, dropped: false, placed: false });
+  const none = (q: number[]): ArmPose => ({ q, carrying: false, dropped: false, placed: false, lifted: false });
 
   if (state.phase === 'travel') {
     return none(lerp(rest(state.armFrom), withGripper(wp[`tray${state.armTo}_hover`], grip.open), smooth(state.armProgress)));
@@ -67,18 +69,18 @@ export function poseFor(state: ReplayState, wp: Waypoints, grip: GripperRange): 
   if (p < SEG.approach) return none(lerp(start, trayHover, seg(0, SEG.approach)));
   if (p < SEG.descend) return none(lerp(trayHover, trayLow, seg(SEG.approach, SEG.descend)));
   if (p < SEG.close) return none(lerp(trayLow, trayLowClosed, seg(SEG.descend, SEG.close)));
-  if (p < SEG.lift) return { q: lerp(trayLowClosed, trayHoverClosed, seg(SEG.close, SEG.lift)), carrying: true, dropped: false, placed: false };
+  if (p < SEG.lift) return { q: lerp(trayLowClosed, trayHoverClosed, seg(SEG.close, SEG.lift)), carrying: true, dropped: false, placed: false, lifted: true };
   if (isDrop) {
     // Lose the part part way across, finish the swing empty and come to rest at the station.
     const q = lerp(trayHoverClosed, outHoverClosed, seg(SEG.lift, 1));
-    if (p < DROP_AT) return { q, carrying: true, dropped: false, placed: false };
+    if (p < DROP_AT) return { q, carrying: true, dropped: false, placed: false, lifted: true };
     const released = withGripper(q, grip.closed + (grip.open - grip.closed) * seg(DROP_AT, DROP_AT + 0.1));
-    return { q: released, carrying: false, dropped: true, placed: false };
+    return { q: released, carrying: false, dropped: true, placed: false, lifted: true };
   }
-  if (p < SEG.carry) return { q: lerp(trayHoverClosed, outHoverClosed, seg(SEG.lift, SEG.carry)), carrying: true, dropped: false, placed: false };
-  if (p < SEG.lower) return { q: lerp(outHoverClosed, outLowClosed, seg(SEG.carry, SEG.lower)), carrying: true, dropped: false, placed: false };
-  if (p < SEG.open) return { q: lerp(outLowClosed, outLow, seg(SEG.lower, SEG.open)), carrying: false, dropped: false, placed: true };
-  return { q: lerp(outLow, outHover, seg(SEG.open, 1)), carrying: false, dropped: false, placed: true };
+  if (p < SEG.carry) return { q: lerp(trayHoverClosed, outHoverClosed, seg(SEG.lift, SEG.carry)), carrying: true, dropped: false, placed: false, lifted: true };
+  if (p < SEG.lower) return { q: lerp(outHoverClosed, outLowClosed, seg(SEG.carry, SEG.lower)), carrying: true, dropped: false, placed: false, lifted: true };
+  if (p < SEG.open) return { q: lerp(outLowClosed, outLow, seg(SEG.lower, SEG.open)), carrying: false, dropped: false, placed: true, lifted: true };
+  return { q: lerp(outLow, outHover, seg(SEG.open, 1)), carrying: false, dropped: false, placed: true, lifted: true };
 }
 
 /** World position of a station's tray or output spot, as CellLayout.spot() in lvhm/so101.py. */

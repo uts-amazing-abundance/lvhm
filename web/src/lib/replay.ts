@@ -11,6 +11,8 @@ import type { Dataset, Run, ShiftData } from '@/types/trace.types';
 
 export const K_SLOTS = 8;
 export const START_TRAY = 0;
+/** Pockets per input tray in the cell views; jobs beyond that wait for a pocket to free up. */
+export const TRAY_POCKETS = 8;
 
 export const enum Outcome {
   OnTime = 0,
@@ -55,6 +57,8 @@ export interface QueueEntry {
   slot: number | null;
   /** Deadline already passed. */
   late: boolean;
+  /** Tray pocket the part sits in, stable for the job's whole stay; null while every pocket is taken. */
+  pocket: number | null;
 }
 
 export interface Stats {
@@ -68,6 +72,8 @@ export interface Stats {
   travel: number;
   score: number;
   unfinished: number;
+  /** Completed jobs per input tray, i.e. parts sitting on each station's output spot. */
+  completedByTray: number[];
 }
 
 export type Phase = 'waiting' | 'travel' | 'pick' | 'finished';
@@ -127,6 +133,9 @@ export class Replay {
   private readonly removedAt: Float64Array;
   /** Times at which each job was dropped, ascending. */
   private readonly dropTimes: number[][];
+  /** Pocket assigned to each job (-1 if never) and the time it got it. */
+  private readonly pocket: Int16Array;
+  private readonly pocketFrom: Float64Array;
 
   constructor(ds: Dataset, shift: ShiftData, run: Run) {
     this.jobs = decodeJobs(ds, shift);
@@ -138,6 +147,42 @@ export class Replay {
       if (s.outcome === Outcome.Drop) this.dropTimes[s.job].push(s.end);
       else this.removedAt[s.job] = s.end;
     }
+    this.pocket = new Int16Array(this.jobs.length).fill(-1);
+    this.pocketFrom = new Float64Array(this.jobs.length).fill(Number.POSITIVE_INFINITY);
+    this.assignPockets();
+  }
+
+  /**
+   * Gives every job a fixed tray pocket for its whole stay, so parts do not shuffle when a
+   * neighbour leaves. Pockets are handed out in arrival order; when all are taken the job waits
+   * (drawn as overflow) and takes the first pocket that frees up.
+   */
+  private assignPockets(): void {
+    const trays = new Set(this.jobs.map((j) => j.tray));
+    for (const tray of trays) {
+      const events: { t: number; kind: 0 | 1; job: number }[] = []; // kind 0 = remove, 1 = arrive
+      for (const j of this.jobs) {
+        if (j.tray !== tray) continue;
+        events.push({ t: j.arrival, kind: 1, job: j.id });
+        if (Number.isFinite(this.removedAt[j.id])) events.push({ t: this.removedAt[j.id], kind: 0, job: j.id });
+      }
+      events.sort((a, b) => a.t - b.t || a.kind - b.kind || a.job - b.job);
+      const free = Array.from({ length: TRAY_POCKETS }, (_, i) => i);
+      const waiting: number[] = [];
+      const give = (job: number, t: number) => { this.pocket[job] = free.shift()!; this.pocketFrom[job] = t; };
+      for (const ev of events) {
+        if (ev.kind === 1) { if (free.length) give(ev.job, ev.t); else waiting.push(ev.job); }
+        else if (this.pocket[ev.job] >= 0) {
+          free.push(this.pocket[ev.job]); free.sort((a, b) => a - b);
+          if (waiting.length) give(waiting.shift()!, ev.t);
+        }
+      }
+    }
+  }
+
+  /** Pocket the job occupies at time t, or null when it has none yet. */
+  pocketAt(jobId: number, t: number): number | null {
+    return this.pocket[jobId] >= 0 && this.pocketFrom[jobId] <= t ? this.pocket[jobId] : null;
   }
 
   /** Time the episode ended: the last pick's end, or the shift length when nothing was picked. */
@@ -159,7 +204,7 @@ export class Replay {
       let attempts = 0;
       for (const d of this.dropTimes[job.id]) if (d <= t) attempts++;
       const slot = out.length < K_SLOTS ? out.length : null;
-      out.push({ job, attempts, waiting: t - job.arrival, slot, late: t > job.deadline });
+      out.push({ job, attempts, waiting: t - job.arrival, slot, late: t > job.deadline, pocket: this.pocketAt(job.id, t) });
     }
     return out;
   }
@@ -187,7 +232,7 @@ export class Replay {
   }
 
   statsAt(t: number): Stats {
-    const st: Stats = { decisions: 0, completed: 0, onTime: 0, late: 0, drops: 0, scrapped: 0, careful: 0, travel: 0, score: 0, unfinished: 0 };
+    const st: Stats = { decisions: 0, completed: 0, onTime: 0, late: 0, drops: 0, scrapped: 0, careful: 0, travel: 0, score: 0, unfinished: 0, completedByTray: [0, 0] };
     for (const s of this.steps) {
       if (s.end > t) break;
       st.decisions++;
@@ -195,8 +240,8 @@ export class Replay {
       st.travel += s.travel;
       if (s.careful) st.careful++;
       switch (s.outcome) {
-        case Outcome.OnTime: st.completed++; st.onTime++; break;
-        case Outcome.Late: st.completed++; st.late++; break;
+        case Outcome.OnTime: st.completed++; st.onTime++; st.completedByTray[this.jobs[s.job].tray]++; break;
+        case Outcome.Late: st.completed++; st.late++; st.completedByTray[this.jobs[s.job].tray]++; break;
         case Outcome.Drop: st.drops++; break;
         case Outcome.Scrap: st.drops++; st.scrapped++; break;
       }

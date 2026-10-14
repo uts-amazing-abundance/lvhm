@@ -98,7 +98,10 @@ function Dashboard({ ds }: { ds: Dataset }) {
     setPlaying(!playing);
   });
   useEventListener('keydown', (ev) => {
+    // Leave keys to form controls and to the sliders' and selects' own keyboard handling.
     if (ev.target instanceof HTMLInputElement || ev.target instanceof HTMLSelectElement || ev.target instanceof HTMLButtonElement) return;
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && focused.closest('input, select, button, [role="slider"], [data-slot="slider"], [role="combobox"], [role="listbox"]')) return;
     if (ev.key === ' ') { ev.preventDefault(); togglePlay(); }
     if (ev.key === 'ArrowRight') setT(Math.min(horizon, tRef.current + 5));
     if (ev.key === 'ArrowLeft') setT(Math.max(0, tRef.current - 5));

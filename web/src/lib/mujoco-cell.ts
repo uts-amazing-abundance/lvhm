@@ -21,7 +21,6 @@ const MESH_FILES = [
 ];
 const PRODUCT_COLOURS: Record<string, string> = { P1: '#2a78d6', P2: '#eb6834', P3: '#1baf7a', P4: '#d9a21b', P5: '#8e5bd6', P6: '#d03b3b' };
 const PART = 0.013;
-const POCKETS = 8;
 const COLLISION_GROUP = 3;
 
 interface Layout { radius: number; station_azimuth: number; spot_offset: number; gripper_open: number; gripper_closed: number }
@@ -202,23 +201,26 @@ export class MujocoCell implements CellRenderer {
     // waiting parts in the trays, placed parts on the output spots
     this.parts.clear();
     const lay = this.timing.layout;
-    const perTray = [0, 0];
     for (const e of state.queue) {
       const s = e.job.tray;
-      const k = perTray[s]++;
-      if (k >= POCKETS) continue;
-      if (pose.carrying && state.inHand?.id === e.job.id) continue;
-      if (pose.dropped && state.inHand?.id === e.job.id) { this.addPart(this.dropSpot(s), e.job, false, true); continue; }
+      const k = e.pocket;
+      if (k == null) continue; // every pocket taken: the part waits off-tray
+      if (pose.lifted && state.inHand?.id === e.job.id) {
+        if (pose.dropped) this.addPart(this.dropSpot(s), e.job, false, true);
+        continue;
+      }
       const [tx, ty] = spot(lay, s, 'tray', 0);
       const az = Math.atan2(ty, tx);
       const u = ((k % 4) - 1.5) * 0.021, v = (Math.floor(k / 4) - 0.5) * 0.024;
       this.addPart([tx + u * Math.cos(az) - v * Math.sin(az), ty + u * Math.sin(az) + v * Math.cos(az), 0.005 + PART / 2], e.job, e.job.id === chosenJob, false);
     }
-    const placed = Math.min(16, state.stats.completed + (pose.placed ? 1 : 0));
-    for (let i = 0; i < placed; i++) {
-      const s = i % 2, k = Math.floor(i / 2);
+    // parts already placed on each station's output spot (the one being released counts too)
+    for (const s of [0, 1]) {
+      const placed = Math.min(9, state.stats.completedByTray[s] + (pose.placed && state.armTo === s ? 1 : 0));
       const [ox, oy] = spot(lay, s, 'out', 0);
-      this.addPart([ox + ((k % 3) - 1) * 0.018, oy + (Math.floor(k / 3) - 1) * 0.018, 0.004 + PART / 2], null, false, false);
+      for (let k = 0; k < placed; k++) {
+        this.addPart([ox + ((k % 3) - 1) * 0.018, oy + (Math.floor(k / 3) - 1) * 0.018, 0.004 + PART / 2], null, false, false);
+      }
     }
 
     this.held.visible = pose.carrying && state.inHand != null;

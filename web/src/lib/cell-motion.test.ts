@@ -63,3 +63,23 @@ describe('cell motion', () => {
     expect((Math.atan2(y1, x1) * 180) / Math.PI).toBeCloseTo(-(timing.layout.station_azimuth - timing.layout.spot_offset), 6);
   });
 });
+
+describe('part leaves the tray exactly once per pick', () => {
+  it('is lifted from the grip until the end of the step, and not before', () => {
+    const shift = ds.conditions[0].shifts[0];
+    const replay = new Replay(ds, shift, shift.runs['DQN']);
+    const steps = [replay.steps.find((s) => s.outcome === 0)!, replay.steps.find((s) => s.outcome === 2 || s.outcome === 3)].filter(Boolean);
+    for (const step of steps) {
+      const t0 = step!.start + step!.travel, span = step!.end - t0;
+      let lifted = false;
+      for (let p = 0; p < 1; p += 0.01) {
+        const pose = poseFor(replay.stateAt(t0 + span * p), timing.waypoints, grip);
+        if (pose.lifted) lifted = true;
+        else expect(lifted).toBe(false); // once lifted, the part never reappears in the tray during the step
+      }
+      expect(lifted).toBe(true);
+      expect(poseFor(replay.stateAt(step!.end - 1e-3), timing.waypoints, grip).lifted).toBe(true);
+      expect(poseFor(replay.stateAt(t0 + span * 0.1), timing.waypoints, grip).lifted).toBe(false);
+    }
+  });
+});
