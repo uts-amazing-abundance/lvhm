@@ -49,7 +49,8 @@ const SEG = { approach: 0.12, descend: 0.28, close: 0.36, lift: 0.48, carry: 0.7
 const DROP_AT = 0.62;
 
 export function poseFor(state: ReplayState, wp: Waypoints, grip: GripperRange): ArmPose {
-  const rest = (tray: number) => withGripper(wp[`out${tray}_hover`], grip.open);
+  // Where the arm waits at a station: the hover above the last part it placed, else the calibrated spot.
+  const rest = (tray: number) => withGripper(wp[`out${tray}_rest`] ?? wp[`out${tray}_hover`], grip.open);
   const none = (q: number[]): ArmPose => ({ q, carrying: false, dropped: false, placed: false, lifted: false, settle: 0 });
 
   if (state.phase === 'travel') {
@@ -77,7 +78,7 @@ export function poseFor(state: ReplayState, wp: Waypoints, grip: GripperRange): 
   if (p < SEG.lift) return { q: lerp(trayLowClosed, trayHoverClosed, seg(SEG.close, SEG.lift)), carrying: true, dropped: false, placed: false, lifted: true, settle: seg(SEG.close, SEG.lift) };
   if (isDrop) {
     // Lose the part part way across, finish the swing empty and come to rest at the station.
-    const q = lerp(trayHoverClosed, outHoverClosed, seg(SEG.lift, 1));
+    const q = lerp(trayHoverClosed, withGripper(rest(s), grip.hold), seg(SEG.lift, 1));
     if (p < DROP_AT) return { q, carrying: true, dropped: false, placed: false, lifted: true, settle: 1 };
     const released = withGripper(q, grip.hold + (grip.open - grip.hold) * seg(DROP_AT, DROP_AT + 0.1));
     return { q: released, carrying: false, dropped: true, placed: false, lifted: true, settle: 1 };

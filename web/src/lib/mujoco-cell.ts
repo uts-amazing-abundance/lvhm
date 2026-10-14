@@ -10,7 +10,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GRIPPER_JOINT, poseFor, spot, type GripperRange, type Waypoints } from '@/lib/cell-motion';
 import { cssVar } from '@/lib/svg-dom';
-import type { Job, ReplayState } from '@/lib/replay';
+import { createIkSolver } from '@/lib/so101-ik';
+import { TRAY_POCKETS, type Job, type ReplayState } from '@/lib/replay';
 import type { CellRenderer } from '@/lib/schematic-cell';
 
 const MESH_FILES = [
@@ -25,7 +26,7 @@ const COLLISION_GROUP = 3;
 /** Output spot grid (single layer, so the calibrated place height stays clear): oldest parts leave first. */
 const OUTPUT_COLS = 4;
 
-interface Layout { radius: number; station_azimuth: number; spot_offset: number; gripper_open: number; gripper_closed: number }
+interface Layout { radius: number; station_azimuth: number; spot_offset: number; grasp_z: number; hover_z: number; gripper_open: number; gripper_closed: number }
 interface Timing { layout: Layout; waypoints: Waypoints }
 
 /** Live typed-array views the bindings expose as `any`. */
@@ -58,6 +59,8 @@ export class MujocoCell implements CellRenderer {
   private readonly held: THREE.Mesh;
   private readonly gripSite: number;
   private readonly grip: GripperRange;
+  /** IK poses above and at every tray pocket and output slot, keyed tray{s}_p{k}_hover/low and out{s}_o{k}_hover/low. */
+  private readonly poses: Record<string, number[]> = {};
   private readonly partGeometry = new THREE.BoxGeometry(PART, PART, PART);
   private readonly materials = new Map<string, THREE.MeshStandardMaterial>();
   private disposed = false;
@@ -73,6 +76,7 @@ export class MujocoCell implements CellRenderer {
     THREE.Object3D.DEFAULT_UP.set(0, 0, 1); // MuJoCo is z-up
     this.grip = { open: timing.layout.gripper_open, closed: timing.layout.gripper_closed, hold: GRIP_HOLD };
     this.gripSite = model.site('gripperframe').id;
+    this.solvePoses();
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
     this.renderer.setPixelRatio(Math.min(2, devicePixelRatio));
@@ -220,7 +224,7 @@ export class MujocoCell implements CellRenderer {
   };
 
   update(state: ReplayState, chosenJob: number | null): void {
-    const pose = poseFor(state, this.timing.waypoints, this.grip);
+    const pose = poseFor(state, this.waypointsFor(state), this.grip);
     const d = this.data as unknown as DataArrays;
     for (let i = 0; i < 6; i++) d.qpos[i] = pose.q[i];
     this.mujoco.mj_kinematics(this.model, this.data);
@@ -234,7 +238,6 @@ export class MujocoCell implements CellRenderer {
 
     // waiting parts in the trays, placed parts on the output spots
     this.parts.clear();
-    const lay = this.timing.layout;
     let fromPocket: [number, number, number] | null = null;
     for (const e of state.queue) {
       const s = e.job.tray;
@@ -252,13 +255,10 @@ export class MujocoCell implements CellRenderer {
     // reused, as if a conveyor had taken that part away, so the newest part is always visible.
     for (const s of [0, 1]) {
       const placed = state.stats.completedByTray[s] + (pose.placed && state.armTo === s ? 1 : 0);
-      const [ox, oy] = spot(lay, s, 'out', 0);
       const capacity = OUTPUT_COLS * OUTPUT_COLS;
       const first = Math.max(0, placed - capacity);
       for (let i = first; i < placed; i++) {
-        const k = i % capacity;
-        const u = ((k % OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022, v = (Math.floor(k / OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022;
-        this.addPart([ox + u, oy + v, 0.004 + PART / 2], null, false, false);
+        this.addPart(this.slotWorld(s, i % capacity), null, false, false);
       }
     }
 
@@ -276,6 +276,72 @@ export class MujocoCell implements CellRenderer {
       this.held.quaternion.setFromRotationMatrix(frame);
       this.held.material = this.material(PRODUCT_COLOURS[state.inHand.product] ?? '#898781');
     }
+  }
+
+  /**
+   * Solves, once, a top-down pose above and at every tray pocket and output slot, seeded from the
+   * calibrated station waypoints. Pockets the solver cannot reach fall back to the station pose.
+   */
+  private solvePoses(): void {
+    const ik = createIkSolver(this.mujoco, this.model, this.data, this.gripSite);
+    const wp = this.timing.waypoints;
+    const hoverZ = this.timing.layout.hover_z;
+    // TCP heights that put the part centre (HELD_OFFSET.x above the TCP along the approach axis) on the plate
+    const pickZ = 0.005 + PART / 2 - HELD_OFFSET.x;
+    const placeZ = 0.004 + PART / 2 - HELD_OFFSET.x;
+    let failed = 0;
+    const add = (key: string, target: [number, number, number], seed: number[]) => {
+      const q = ik.solve(target, seed);
+      if (q) this.poses[key] = q; else failed++;
+    };
+    for (const s of [0, 1]) {
+      for (let k = 0; k < TRAY_POCKETS; k++) {
+        const [x, y] = this.pocketWorld(s, k);
+        add(`tray${s}_p${k}_hover`, [x, y, hoverZ], wp[`tray${s}_hover`]);
+        add(`tray${s}_p${k}_low`, [x, y, pickZ], wp[`tray${s}_low`]);
+      }
+      for (let k = 0; k < OUTPUT_COLS * OUTPUT_COLS; k++) {
+        const [x, y] = this.slotWorld(s, k);
+        add(`out${s}_o${k}_hover`, [x, y, hoverZ], wp[`out${s}_hover`]);
+        add(`out${s}_o${k}_low`, [x, y, placeZ], wp[`out${s}_low`]);
+      }
+    }
+    ik.dispose();
+    if (failed) console.warn(`SO-101 IK: ${failed} pocket/slot poses out of reach; those use the station waypoint`);
+  }
+
+  /**
+   * The calibrated waypoints with the tray pose redirected to the pocket of the job being picked,
+   * the output pose to the slot the part will occupy, and each station's rest pose to the slot it
+   * filled last, so the arm goes where the parts actually are.
+   */
+  private waypointsFor(state: ReplayState): Waypoints {
+    const wp: Waypoints = { ...this.timing.waypoints };
+    const cap = OUTPUT_COLS * OUTPUT_COLS;
+    const use = (dst: string, src: string) => { const q = this.poses[src]; if (q) wp[dst] = q; };
+    for (const s of [0, 1]) {
+      const placed = state.stats.completedByTray[s];
+      if (placed > 0) use(`out${s}_rest`, `out${s}_o${(placed - 1) % cap}_hover`);
+      if (state.current && state.phase === 'pick' && state.armTo === s) {
+        use(`out${s}_hover`, `out${s}_o${placed % cap}_hover`);
+        use(`out${s}_low`, `out${s}_o${placed % cap}_low`);
+      }
+    }
+    if (state.current) {
+      const entry = state.queue.find((e) => e.job.id === state.current!.job);
+      if (entry?.pocket != null) {
+        use(`tray${state.armTo}_hover`, `tray${state.armTo}_p${entry.pocket}_hover`);
+        use(`tray${state.armTo}_low`, `tray${state.armTo}_p${entry.pocket}_low`);
+      }
+    }
+    return wp;
+  }
+
+  /** World position of an output slot: a 4×4 grid on the station's output plate. */
+  private slotWorld(station: number, k: number): [number, number, number] {
+    const [ox, oy] = spot(this.timing.layout, station, 'out', 0);
+    const u = ((k % OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022, v = (Math.floor(k / OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022;
+    return [ox + u, oy + v, 0.004 + PART / 2];
   }
 
   /** World position of a tray pocket: a 4×2 grid on the tray plate, aligned with the station. */

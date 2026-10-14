@@ -54,7 +54,12 @@ export class SchematicCell implements CellRenderer {
     svg('circle', { cx: SHOULDER.x, cy: SHOULDER.y, r: 9, fill: cssVar('--ink') }, g);
   }
 
+  /** x of the pocket holding the job being picked, so the arm dips where the part is. */
+  private targetX: number | null = null;
+
   update(state: ReplayState, chosenJob: number | null): void {
+    const picked = state.current ? state.queue.find((e) => e.job.id === state.current!.job) : undefined;
+    this.targetX = picked?.pocket != null ? this.pocketPos(picked.job.tray, picked.pocket).x : null;
     this.drawJobs(state, chosenJob);
     this.drawArm(state);
     const placed = svg('text', { x: 240, y: 60, 'text-anchor': 'middle', style: `fill:${cssVar('--ink-2')};font-size:12px;font-weight:600` }, this.layer.text);
@@ -116,7 +121,7 @@ export class SchematicCell implements CellRenderer {
     } else if (state.phase === 'pick' && state.current) {
       const p = state.pickProgress;
       const isDrop = state.current.outcome === Outcome.Drop || state.current.outcome === Outcome.Scrap;
-      const tx = TRAY_X[state.armTo];
+      const tx = this.targetX ?? TRAY_X[state.armTo];
       const out = OUT[state.armTo];
       if (p < 0.3) { // descend
         wx = tx; wy = HOVER_Y + (DOWN_Y - HOVER_Y) * easeInOut(p / 0.3);
