@@ -1,6 +1,6 @@
 instance,jobs,brute_force,cpsat,cpsat_status,cpsat_matches,FCFS,FCFS_ok,SPT,SPT_ok,LRF,LRF_ok,EDF,EDF_ok,NTF,NTF_ok,Random,Random_ok,ATCSR+C,ATCSR+C_ok,RollCP,RollCP_ok
-0,7,6.8275,6.8275,OPTIMAL,True,6.4825,True,3.8861,True,3.8861,True,6.4825,True,6.8275,True,5.5083,True,6.8275,True,6.8275,True
-1,7,6.8275,6.8275,OPTIMAL,True,6.4825,True,5.4679,True,5.0884,True,6.4825,True,6.8275,True,5.4679,True,6.8275,True,6.8275,True
-2,7,6.655,6.655,OPTIMAL,True,6.4825,True,5.6479,True,6.31,True,6.1375,True,5.7475,True,4.1637,True,6.655,True,6.655,True
-3,7,6.655,6.655,OPTIMAL,True,6.655,True,4.1943,True,3.8474,True,6.655,True,3.496,True,3.1549,True,4.5907,True,6.655,True
-4,7,6.8275,6.8275,OPTIMAL,True,6.1375,True,4.3503,True,4.3503,True,6.1375,True,6.8275,True,4.6787,True,6.8275,True,6.8275,True
+0,7,6.8275,6.8275,OPTIMAL,True,6.4825,True,3.8861,True,3.8861,True,6.4825,True,6.8275,True,5.1271,True,6.8275,True,6.8275,True
+1,7,6.8275,6.8275,OPTIMAL,True,6.4825,True,5.4679,True,5.0884,True,6.4825,True,6.8275,True,6.4825,True,6.8275,True,6.8275,True
+2,7,6.655,6.655,OPTIMAL,True,6.4825,True,5.6479,True,6.31,True,6.1375,True,5.7475,True,4.1666,True,6.655,True,6.655,True
+3,7,6.655,6.655,OPTIMAL,True,6.655,True,4.1943,True,3.8474,True,6.655,True,3.496,True,5.272,True,4.5907,True,6.655,True
+4,7,6.8275,6.8275,OPTIMAL,True,6.1375,True,4.3503,True,4.3503,True,6.1375,True,6.8275,True,3.8942,True,6.8275,True,6.8275,True

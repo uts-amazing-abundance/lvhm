@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Job Sequence Dashboard</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7;
+  --surface: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink-2: #52514e;
+  --muted: #898781;
+  --grid: #e1e0d9;
+  --axis: #c3c2b7;
+  --ring: rgba(11,11,11,0.10);
+  --wash: rgba(11,11,11,0.05);
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a;
+  --other: #c3c2b7;
+  --travel: #898781;
+  --good: #0ca30c; --warning: #fab219; --serious: #ec835a; --critical: #d03b3b;
+  --hatch: rgba(11,11,11,0.55);
+  --focus: #0b0b0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --other: #4a4a46; --travel: #6b6a65;
+    --hatch: rgba(0,0,0,0.6); --focus: #ffffff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface: #1a1a19; --ink: #ffffff; --ink-2: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --ring: rgba(255,255,255,0.10); --wash: rgba(255,255,255,0.06);
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --other: #4a4a46; --travel: #6b6a65;
+  --hatch: rgba(0,0,0,0.6); --focus: #ffffff;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink);
+  font: 14px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1280px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; margin: 0 0 4px; font-weight: 650; }
+h2 { font-size: 15px; margin: 0 0 2px; font-weight: 650; }
+.sub { color: var(--ink-2); margin: 0 0 20px; max-width: 80ch; }
+.note { color: var(--muted); font-size: 12.5px; margin: 2px 0 12px; }
+.card { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+.filters { display: flex; flex-wrap: wrap; gap: 12px 20px; align-items: end; margin-bottom: 16px; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--ink-2); }
+select, button { font: inherit; color: var(--ink); background: var(--surface); border: 1px solid var(--axis);
+  border-radius: 8px; padding: 6px 10px; }
+button { cursor: pointer; }
+button:hover, select:hover { background: var(--wash); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { border-radius: 999px; padding: 4px 10px; font-size: 12.5px; border: 1px solid var(--axis); }
+.chip[aria-pressed="false"] { color: var(--muted); border-style: dashed; }
+.chip .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 16px; }
+.kpi { background: var(--surface); border: 1px solid var(--ring); border-radius: 12px; padding: 12px 14px; }
+.kpi .k { font-size: 12px; color: var(--ink-2); }
+.kpi .v { font-size: 24px; font-weight: 650; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12.5px; color: var(--ink-2); margin: 6px 0 10px; }
+.sw { display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+.row-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+.scroll { overflow-x: auto; }
+svg { display: block; user-select: none; }
+#gantt { cursor: crosshair; }
+svg text { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+svg .lane-label { fill: var(--ink); font-size: 12px; font-weight: 600; }
+svg .lane-score { fill: var(--ink-2); font-size: 11px; }
+.pick { cursor: pointer; }
+.pick.dim { opacity: 0.18; }
+.pick.hl { stroke: var(--focus); stroke-width: 2; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { padding: 6px 8px; text-align: right; border-bottom: 1px solid var(--grid); white-space: nowrap; }
+th { font-size: 12px; color: var(--ink-2); font-weight: 600; cursor: pointer; user-select: none; position: sticky; top: 0; background: var(--surface); }
+th:first-child, td:first-child { text-align: left; }
+tbody tr:hover { background: var(--wash); }
+tr.sel td { font-weight: 650; }
+.bar { display: inline-block; height: 8px; border-radius: 0 4px 4px 0; background: var(--s1); vertical-align: 0; margin-left: 6px; }
+.tbl-wrap { max-height: 480px; overflow: auto; }
+.cellpos { display: inline-block; min-width: 30px; padding: 1px 6px; border-radius: 4px; color: #0b0b0b; font-size: 12px; }
+#tip { position: fixed; pointer-events: none; z-index: 10; background: var(--surface); color: var(--ink);
+  border: 1px solid var(--ring); border-radius: 8px; padding: 8px 10px; font-size: 12.5px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.15); display: none; max-width: 300px; }
+#tip b { font-weight: 650; }
+#tip .r { display: flex; justify-content: space-between; gap: 16px; }
+#tip .r span:first-child { color: var(--ink-2); }
+.two { display: grid; grid-template-columns: 1fr; gap: 16px; }
+.two > *, .card { min-width: 0; }
+.two .card { margin-bottom: 0; }
+.two { margin-bottom: 16px; }
+@media (min-width: 1000px) { .two { grid-template-columns: 3fr 2fr; } }
+@media (forced-colors: active) { .pick { stroke: CanvasText; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>Job sequence dashboard</h1>
+  <p class="sub" id="subtitle"></p>
+
+  <div class="filters">
+    <label>Test condition <select id="cond"></select></label>
+    <label>Shift <select id="shift"></select></label>
+    <label>Colour picks by
+      <select id="colorBy"><option value="outcome">Outcome</option><option value="product">Product</option><option value="tray">Tray</option></select>
+    </label>
+    <div><div style="font-size:12px;color:var(--ink-2);margin-bottom:4px">Policies shown</div><div class="chips" id="chips"></div></div>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <section class="card">
+    <div class="row-head">
+      <div>
+        <h2>Pick sequence over the shift</h2>
+        <p class="note">One lane per policy, one bar per pick (travel swing in grey, then the pick). Hatched bars are careful-mode picks. Drag across the chart to zoom, click a bar to follow that job in every lane.</p>
+      </div>
+      <div><button id="reset">Reset zoom</button> <button id="clearJob">Clear job</button></div>
+    </div>
+    <div class="legend" id="legend"></div>
+    <div class="scroll"><svg id="gantt"></svg></div>
+  </section>
+
+  <div class="two">
+    <section class="card">
+      <h2>Cumulative score through the shift</h2>
+      <p class="note">Reward collected so far. Three policies are coloured, the rest stay grey; click a row in the table to change which.</p>
+      <div class="legend" id="cumLegend"></div>
+      <div class="scroll"><svg id="cum"></svg></div>
+    </section>
+    <section class="card">
+      <h2>Policies on this shift</h2>
+      <p class="note">This shift, and the mean over the traced shifts of this condition. Click a column to sort, a row to highlight.</p>
+      <div class="tbl-wrap"><table id="policyTable"></table></div>
+    </section>
+  </div>
+
+  <section class="card">
+    <h2>Jobs and where each policy served them</h2>
+    <p class="note">Each cell is the job's position in that policy's sequence, coloured by how it ended. A dash means the job was never picked before the shift ended.</p>
+    <div class="tbl-wrap"><table id="jobTable"></table></div>
+  </section>
+
+  <p class="note" id="footer"></p>
+</main>
+<div id="tip"></div>
+
+<script>
+const DATA = /*__DATA__*/null;
+
+const OUT_NAMES = ['On time', 'Late', 'Dropped, retried', 'Dropped, scrapped'];
+const OUT_VARS = ['--good', '--warning', '--serious', '--critical'];
+const PRODUCT_VARS = ['--s1', '--s2', '--s3', '--warning', '--serious', '--critical'];
+const SLOT_VARS = ['--s1', '--s2', '--s3'];
+const css = v => getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+const $ = id => document.getElementById(id);
+const NS = 'http://www.w3.org/2000/svg';
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+const fmt = (x, d = 1) => (x == null || isNaN(x)) ? '-' : Number(x).toFixed(d);
+
+const state = {
+  cond: 0, shift: 0, colorBy: 'outcome',
+  shown: new Set(DATA.policies),
+  highlight: DATA.policies.filter(p => ['ATCSR+C', 'RollCP', 'DQN'].includes(p)).slice(0, 3),
+  view: [0, DATA.shift_length], job: null, sortKey: 'score', sortDir: -1,
+};
+const productNames = Object.keys(DATA.products);
+
+function cur() { return DATA.conditions[state.cond].shifts[state.shift]; }
+function stepObj(s) { return {job: s[0], start: s[1], end: s[2], travel: s[3], careful: s[4], outcome: s[5], queue: s[6], reward: s[7]}; }
+
+function pickColor(st, jobs) {
+  if (state.colorBy === 'outcome') return css(OUT_VARS[st.outcome]);
+  if (state.colorBy === 'tray') return css(['--s1', '--s2'][jobs[st.job][2]]);
+  return css(PRODUCT_VARS[productNames.indexOf(jobs[st.job][3])] || '--other');
+}
+
+// ---------- header / filters ----------
+function initFilters() {
+  $('subtitle').textContent =
+    `Every pick each policy made on the pre-drawn test shifts of the ${DATA.profile} run in experiments_phase2_1.ipynb. ` +
+    `${DATA.conditions[0].shifts.length} shifts per condition, ${DATA.shift_length} s per shift.`;
+  DATA.conditions.forEach((c, i) => el2('option', {value: i, text: c.description}, $('cond')));
+  fillShifts();
+  $('cond').onchange = e => { state.cond = +e.target.value; fillShifts(); state.job = null; render(); };
+  $('shift').onchange = e => { state.shift = +e.target.value; state.job = null; render(); };
+  $('colorBy').onchange = e => { state.colorBy = e.target.value; render(); };
+  $('reset').onclick = () => { state.view = [0, DATA.shift_length]; render(); };
+  $('clearJob').onclick = () => { state.job = null; render(); };
+  const chips = $('chips');
+  DATA.policies.forEach(p => {
+    const b = el2('button', {className: 'chip', text: p}, chips);
+    b.setAttribute('aria-pressed', 'true');
+    b.onclick = () => {
+      if (state.shown.has(p)) { if (state.shown.size > 1) state.shown.delete(p); } else state.shown.add(p);
+      render();
+    };
+  });
+}
+function el2(tag, o, parent) {
+  const e = document.createElement(tag);
+  if (o.text != null) e.textContent = o.text;
+  if (o.className) e.className = o.className;
+  if (o.value != null) e.value = o.value;
+  if (o.html != null) e.innerHTML = o.html;
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function fillShifts() {
+  const s = $('shift'); s.innerHTML = '';
+  DATA.conditions[state.cond].shifts.forEach((sh, i) =>
+    el2('option', {value: i, text: `Shift ${sh.shift} (${sh.jobs.length} jobs)`}, s));
+  state.shift = 0;
+}
+
+// ---------- KPIs ----------
+function renderKpis() {
+  const sh = cur(), k = $('kpis'); k.innerHTML = '';
+  const shown = DATA.policies.filter(p => state.shown.has(p));
+  const best = shown.reduce((a, p) => sh.runs[p].metrics.score > sh.runs[a].metrics.score ? p : a, shown[0]);
+  const rules = shown.filter(p => !['PPO', 'DQN'].includes(p));
+  const bestRule = rules.length ? rules.reduce((a, p) => sh.runs[p].metrics.score > sh.runs[a].metrics.score ? p : a, rules[0]) : null;
+  const card = (key, val, d) => el2('div', {className: 'kpi', html: `<div class="k">${key}</div><div class="v">${val}</div><div class="d">${d}</div>`}, k);
+  card('Jobs in this shift', sh.jobs.length, `${sh.jobs.filter(j => j[0] === 0).length} waiting at the start`);
+  card('Best policy on this shift', best, `score ${fmt(sh.runs[best].metrics.score, 2)}`);
+  if (bestRule) card('Best baseline', bestRule, `score ${fmt(sh.runs[bestRule].metrics.score, 2)}`);
+  for (const p of ['DQN', 'PPO']) if (sh.runs[p] && state.shown.has(p)) {
+    const m = sh.runs[p].metrics, gap = bestRule ? m.score - sh.runs[bestRule].metrics.score : NaN;
+    card(`${p} score`, fmt(m.score, 2), bestRule ? `${gap >= 0 ? '+' : ''}${fmt(gap, 2)} vs ${bestRule}` : '');
+  }
+}
+
+// ---------- Gantt ----------
+function renderLegend() {
+  const L = $('legend'); L.innerHTML = '';
+  let items;
+  if (state.colorBy === 'outcome') items = OUT_NAMES.map((n, i) => [n, css(OUT_VARS[i])]);
+  else if (state.colorBy === 'tray') items = [['Tray 0', css('--s1')], ['Tray 1', css('--s2')]];
+  else {
+    const present = new Set(cur().jobs.map(j => j[3]));
+    items = productNames.filter(p => present.has(p)).map(p => {
+      const [w, f] = DATA.products[p];
+      return [`${p} (${w} kg, fragility ${f})`, css(PRODUCT_VARS[productNames.indexOf(p)])];
+    });
+  }
+  items.push(['Travel swing', css('--travel')]);
+  for (const [n, c] of items) el2('span', {html: `<span class="sw" style="background:${c}"></span>${n}`}, L);
+  el2('span', {html: `<svg width="14" height="10" style="display:inline-block;vertical-align:-1px;margin-right:6px"><rect width="14" height="10" rx="2" fill="${css('--muted')}"/><rect width="14" height="10" rx="2" fill="url(#hatchL)"/><defs><pattern id="hatchL" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><line x1="0" y1="0" x2="0" y2="4" stroke="${css('--hatch')}" stroke-width="1.5"/></pattern></defs></svg>Careful mode`}, L);
+}
+
+function renderGantt() {
+  const svg = $('gantt'); svg.innerHTML = '';
+  const sh = cur(), jobs = sh.jobs;
+  const pols = DATA.policies.filter(p => state.shown.has(p));
+  const W = Math.max(640, $('gantt').parentElement.clientWidth), left = 92, right = 16, top = 22;
+  const laneH = 46, barH = 22, qH = 12;
+  const H = top + pols.length * laneH + 28;
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const [t0, t1] = state.view, iw = W - left - right;
+  const x = t => left + (t - t0) / (t1 - t0) * iw;
+
+  const defs = el('defs', {}, svg);
+  const pat = el('pattern', {id: 'hatch', width: 5, height: 5, patternUnits: 'userSpaceOnUse', patternTransform: 'rotate(45)'}, defs);
+  el('line', {x1: 0, y1: 0, x2: 0, y2: 5, stroke: css('--hatch'), 'stroke-width': 1.6}, pat);
+  const clip = el('clipPath', {id: 'gclip'}, defs);
+  el('rect', {x: left, y: 0, width: iw, height: H}, clip);
+
+  // grid + axis
+  const step = niceStep((t1 - t0) / 8);
+  for (let t = Math.ceil(t0 / step) * step; t <= t1 + 1e-9; t += step) {
+    el('line', {x1: x(t), x2: x(t), y1: top - 4, y2: H - 24, stroke: css('--grid'), 'stroke-width': 1}, svg);
+    el('text', {x: x(t), y: H - 10, 'text-anchor': 'middle'}, svg).textContent = `${Math.round(t)} s`;
+  }
+  el('text', {x: left, y: 12}, svg).textContent = 'time in shift';
+
+  // job arrival/deadline marker for the followed job
+  const g = el('g', {'clip-path': 'url(#gclip)'}, svg);
+  if (state.job != null) {
+    const [a, d] = jobs[state.job];
+    el('rect', {x: x(a), y: top - 4, width: Math.max(1, x(d) - x(a)), height: pols.length * laneH, fill: css('--wash')}, g);
+    el('line', {x1: x(d), x2: x(d), y1: top - 4, y2: top + pols.length * laneH - 4, stroke: css('--critical'), 'stroke-dasharray': '3 3'}, g);
+    el('text', {x: x(d) + 4, y: top + 6, fill: css('--ink-2')}, g).textContent = `job ${state.job} deadline`;
+  }
+
+  pols.forEach((p, li) => {
+    const y0 = top + li * laneH, run = sh.runs[p];
+    el('text', {x: left - 10, y: y0 + barH / 2 + 4, 'text-anchor': 'end', class: 'lane-label'}, svg).textContent = p;
+    el('text', {x: left - 10, y: y0 + barH + 12, 'text-anchor': 'end', class: 'lane-score'}, svg).textContent = `score ${fmt(run.metrics.score, 1)}`;
+    el('line', {x1: left, x2: left + iw, y1: y0 + barH + 1, y2: y0 + barH + 1, stroke: css('--axis')}, svg);
+
+    // queue length sparkline under the lane
+    const maxQ = Math.max(8, ...run.steps.map(s => s[6]));
+    let d = '';
+    run.steps.forEach((s, i) => {
+      const yy = y0 + barH + 4 + qH - (s[6] / maxQ) * qH;
+      const nx = i + 1 < run.steps.length ? run.steps[i + 1][1] : s[2];
+      d += `${i ? 'L' : 'M'}${x(s[1])},${yy}H${x(nx)}`;
+    });
+    el('path', {d, fill: 'none', stroke: css('--muted'), 'stroke-width': 1}, g);
+
+    run.steps.forEach((raw, i) => {
+      const s = stepObj(raw);
+      if (s.end < t0 || s.start > t1) return;
+      if (s.travel > 0) el('rect', {x: x(s.start), y: y0 + 7, width: Math.max(0.5, x(s.start + s.travel) - x(s.start)), height: barH - 14, fill: css('--travel')}, g);
+      const xs = x(s.start + s.travel), w = Math.max(1, x(s.end) - xs - 1);
+      const r = el('rect', {x: xs, y: y0, width: w, height: barH, rx: Math.min(3, w / 2), fill: pickColor(s, jobs), class: 'pick'}, g);
+      if (state.job != null) r.classList.add(s.job === state.job ? 'hl' : 'dim');
+      if (s.careful) {
+        const h = el('rect', {x: xs, y: y0, width: w, height: barH, rx: Math.min(3, w / 2), fill: 'url(#hatch)', 'pointer-events': 'none'}, g);
+        if (state.job != null && s.job !== state.job) h.setAttribute('opacity', 0.18);
+      }
+      if (w > 18) {
+        const t = el('text', {x: xs + w / 2, y: y0 + barH / 2 + 4, 'text-anchor': 'middle', 'pointer-events': 'none', style: 'fill:#0b0b0b;font-size:10px'}, g);
+        t.textContent = s.job;
+        if (state.job != null && s.job !== state.job) t.setAttribute('opacity', 0.25);
+      }
+      r.addEventListener('mousemove', ev => showTip(ev, tipFor(p, s, i, jobs)));
+      r.addEventListener('mouseleave', hideTip);
+      r.addEventListener('click', ev => { ev.stopPropagation(); state.job = state.job === s.job ? null : s.job; render(); });
+    });
+  });
+
+  // drag to zoom
+  const brush = el('rect', {x: 0, y: top - 4, width: 0, height: pols.length * laneH, fill: css('--wash'), stroke: css('--axis'), visibility: 'hidden'}, svg);
+  let startX = null;
+  const toT = px => t0 + (Math.min(Math.max(px, left), left + iw) - left) / iw * (t1 - t0);
+  svg.onmousedown = ev => { if (ev.target.classList.contains('pick')) return; ev.preventDefault(); startX = ev.offsetX; };
+  svg.onmousemove = ev => {
+    if (startX == null) return;
+    const a = Math.min(startX, ev.offsetX), b = Math.max(startX, ev.offsetX);
+    brush.setAttribute('x', a); brush.setAttribute('width', b - a); brush.setAttribute('visibility', 'visible');
+  };
+  svg.onmouseup = ev => {
+    if (startX == null) return;
+    const a = toT(Math.min(startX, ev.offsetX)), b = toT(Math.max(startX, ev.offsetX));
+    startX = null;
+    if (b - a > 2) { state.view = [a, b]; render(); } else brush.setAttribute('visibility', 'hidden');
+  };
+  svg.onmouseleave = () => { startX = null; brush.setAttribute('visibility', 'hidden'); };
+}
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(raw))), n = raw / p;
+  return (n < 1.5 ? 1 : n < 3.5 ? 2 : n < 7.5 ? 5 : 10) * p;
+}
+function tipFor(p, s, i, jobs) {
+  const [a, d, tray, prod, proc] = jobs[s.job];
+  const lateBy = s.end - d;
+  return `<b>${p}</b> &middot; pick ${i + 1}: job ${s.job}
+    <div class="r"><span>Product</span><span>${prod}, tray ${tray}</span></div>
+    <div class="r"><span>Outcome</span><span>${OUT_NAMES[s.outcome]}</span></div>
+    <div class="r"><span>Mode</span><span>${s.careful ? 'careful' : 'normal'}</span></div>
+    <div class="r"><span>Arrived / deadline</span><span>${fmt(a)} s / ${fmt(d)} s</span></div>
+    <div class="r"><span>Picked</span><span>${fmt(s.start)} to ${fmt(s.end)} s</span></div>
+    <div class="r"><span>Waited before pick</span><span>${fmt(s.start - a)} s</span></div>
+    <div class="r"><span>${lateBy > 0 ? 'Late by' : 'Slack left'}</span><span>${fmt(Math.abs(lateBy))} s</span></div>
+    <div class="r"><span>Travel swing</span><span>${fmt(s.travel, 2)} s</span></div>
+    <div class="r"><span>Jobs waiting</span><span>${s.queue}</span></div>
+    <div class="r"><span>Reward this step</span><span>${fmt(s.reward, 3)}</span></div>`;
+}
+function showTip(ev, html) {
+  const t = $('tip'); t.innerHTML = html; t.style.display = 'block';
+  const w = t.offsetWidth, h = t.offsetHeight;
+  t.style.left = Math.min(ev.clientX + 14, innerWidth - w - 8) + 'px';
+  t.style.top = Math.min(ev.clientY + 14, innerHeight - h - 8) + 'px';
+}
+function hideTip() { $('tip').style.display = 'none'; }
+
+// ---------- cumulative score ----------
+function renderCum() {
+  const svg = $('cum'); svg.innerHTML = '';
+  const sh = cur();
+  const pols = DATA.policies.filter(p => state.shown.has(p));
+  const W = Math.max(360, svg.parentElement.clientWidth), H = 300, left = 44, right = 104, top = 12, bottom = 28;
+  svg.setAttribute('width', W); svg.setAttribute('height', H);
+  const series = pols.map(p => {
+    let c = 0; const pts = [[0, 0]];
+    for (const s of sh.runs[p].steps) { c += s[7]; pts.push([s[2], c]); }
+    return {p, pts};
+  });
+  const ys = series.flatMap(s => s.pts.map(q => q[1]));
+  let y0 = Math.min(0, ...ys), y1 = Math.max(...ys);
+  const st = niceStep((y1 - y0) / 5); y0 = Math.floor(y0 / st) * st; y1 = Math.ceil(y1 / st) * st;
+  const T = DATA.shift_length, iw = W - left - right, ih = H - top - bottom;
+  const x = t => left + Math.min(t, T) / T * iw, y = v => top + (1 - (v - y0) / (y1 - y0)) * ih;
+  for (let v = y0; v <= y1 + 1e-9; v += st) {
+    el('line', {x1: left, x2: left + iw, y1: y(v), y2: y(v), stroke: css(v === 0 ? '--axis' : '--grid')}, svg);
+    el('text', {x: left - 6, y: y(v) + 4, 'text-anchor': 'end'}, svg).textContent = Math.round(v);
+  }
+  for (let t = 0; t <= T; t += 120) el('text', {x: x(t), y: H - 8, 'text-anchor': 'middle'}, svg).textContent = `${t} s`;
+  const ordered = [...series.filter(s => !state.highlight.includes(s.p)), ...series.filter(s => state.highlight.includes(s.p))];
+  const labels = [];
+  for (const s of ordered) {
+    const hi = state.highlight.indexOf(s.p);
+    const col = hi >= 0 ? css(SLOT_VARS[hi]) : css('--other');
+    let d = ''; s.pts.forEach((q, i) => d += `${i ? 'L' : 'M'}${x(q[0])},${y(q[1])}`);
+    el('path', {d, fill: 'none', stroke: col, 'stroke-width': hi >= 0 ? 2 : 1.2, 'stroke-linejoin': 'round'}, svg);
+    if (hi >= 0) { const last = s.pts[s.pts.length - 1]; labels.push({p: s.p, y: y(last[1]), v: last[1]}); }
+  }
+  labels.sort((a, b) => a.y - b.y);
+  for (let i = 1; i < labels.length; i++) labels[i].y = Math.max(labels[i].y, labels[i - 1].y + 13);
+  for (const l of labels) el('text', {x: left + iw + 6, y: l.y + 4, style: `fill:${css('--ink-2')}`}, svg).textContent = `${l.p} ${fmt(l.v, 1)}`;
+
+  // hover crosshair
+  const cross = el('line', {y1: top, y2: top + ih, stroke: css('--axis'), visibility: 'hidden'}, svg);
+  const hit = el('rect', {x: left, y: top, width: iw, height: ih, fill: 'transparent'}, svg);
+  hit.addEventListener('mousemove', ev => {
+    const r = svg.getBoundingClientRect(), px = ev.clientX - r.left;
+    const t = (px - left) / iw * T;
+    cross.setAttribute('x1', px); cross.setAttribute('x2', px); cross.setAttribute('visibility', 'visible');
+    const vals = series.map(s => { let v = 0; for (const q of s.pts) { if (q[0] <= t) v = q[1]; else break; } return [s.p, v]; })
+      .sort((a, b) => b[1] - a[1]);
+    showTip(ev, `<b>${fmt(t, 0)} s into the shift</b>` + vals.map(([p, v]) => `<div class="r"><span>${p}</span><span>${fmt(v, 2)}</span></div>`).join(''));
+  });
+  hit.addEventListener('mouseleave', () => { cross.setAttribute('visibility', 'hidden'); hideTip(); });
+
+  const L = $('cumLegend'); L.innerHTML = '';
+  state.highlight.filter(p => state.shown.has(p)).forEach(p =>
+    el2('span', {html: `<span class="sw" style="background:${css(SLOT_VARS[state.highlight.indexOf(p)])};height:3px;vertical-align:3px"></span>${p}`}, L));
+  el2('span', {html: `<span class="sw" style="background:${css('--other')};height:2px;vertical-align:3px"></span>other policies`}, L);
+}
+
+// ---------- policy table ----------
+const COLS = [
+  ['score', 'Score', 2], ['mean_score', 'Mean score', 2], ['on_time', 'On time', 0], ['late', 'Late', 0],
+  ['drops', 'Drops', 0], ['scrapped', 'Scrapped', 0], ['unfinished', 'Unfinished', 0],
+  ['careful', 'Careful', 0], ['tardiness', 'Tardiness s', 0], ['travel', 'Travel s', 1],
+];
+function renderPolicyTable() {
+  const sh = cur(), cond = DATA.conditions[state.cond];
+  const rows = DATA.policies.filter(p => state.shown.has(p)).map(p => {
+    const m = sh.runs[p].metrics;
+    const mean = cond.shifts.reduce((a, s) => a + s.runs[p].metrics.score, 0) / cond.shifts.length;
+    return {p, ...m, mean_score: mean};
+  });
+  rows.sort((a, b) => state.sortDir * ((a[state.sortKey] ?? 0) - (b[state.sortKey] ?? 0)));
+  const maxS = Math.max(...rows.map(r => Math.abs(r.score)), 1e-9);
+  const t = $('policyTable'); t.innerHTML = '';
+  const head = el2('tr', {}, el2('thead', {}, t));
+  el2('th', {text: 'Policy'}, head);
+  for (const [k, n] of COLS) {
+    const th = el2('th', {text: n + (state.sortKey === k ? (state.sortDir < 0 ? ' ↓' : ' ↑') : '')}, head);
+    th.onclick = () => { state.sortDir = state.sortKey === k ? -state.sortDir : -1; state.sortKey = k; renderPolicyTable(); };
+  }
+  const body = el2('tbody', {}, t);
+  for (const r of rows) {
+    const tr = el2('tr', {}, body);
+    const hi = state.highlight.indexOf(r.p);
+    if (hi >= 0) tr.className = 'sel';
+    el2('td', {html: `<span class="sw" style="width:8px;height:8px;border-radius:50%;background:${hi >= 0 ? css(SLOT_VARS[hi]) : 'transparent'}"></span>${r.p}`}, tr);
+    for (const [k, , d] of COLS) {
+      const td = el2('td', {text: fmt(r[k], d)}, tr);
+      if (k === 'score' && r.score > 0) el2('span', {className: 'bar'}, td).style.width = (r.score / maxS * 48) + 'px';
+    }
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => {
+      const i = state.highlight.indexOf(r.p);
+      if (i >= 0) state.highlight.splice(i, 1);
+      else { if (state.highlight.length >= 3) state.highlight.shift(); state.highlight.push(r.p); }
+      renderCum(); renderPolicyTable();
+    };
+  }
+}
+
+// ---------- job table ----------
+function renderJobTable() {
+  const sh = cur(), jobs = sh.jobs;
+  const pols = DATA.policies.filter(p => state.shown.has(p));
+  const pos = {};
+  for (const p of pols) {
+    pos[p] = {};
+    sh.runs[p].steps.forEach((s, i) => { (pos[p][s[0]] = pos[p][s[0]] || []).push([i + 1, s[5]]); });
+  }
+  const t = $('jobTable'); t.innerHTML = '';
+  const head = el2('tr', {}, el2('thead', {}, t));
+  for (const n of ['Job', 'Product', 'Tray', 'Arrives s', 'Deadline s', 'Nominal pick s', ...pols]) el2('th', {text: n}, head);
+  const body = el2('tbody', {}, t);
+  jobs.forEach((j, idx) => {
+    const tr = el2('tr', {}, body);
+    if (state.job === idx) tr.className = 'sel';
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => { state.job = state.job === idx ? null : idx; render(); };
+    for (const v of [idx, j[3], j[2], fmt(j[0]), fmt(j[1]), fmt(j[4], 2)]) el2('td', {text: v}, tr);
+    for (const p of pols) {
+      const td = el2('td', {}, tr), e = pos[p][idx];
+      if (!e) { td.textContent = '-'; continue; }
+      td.innerHTML = e.map(([n, o]) => `<span class="cellpos" title="${OUT_NAMES[o]}" style="background:${css(OUT_VARS[o])}">${n}</span>`).join(' ');
+    }
+  });
+}
+
+function render() {
+  [...$('chips').children].forEach(b => b.setAttribute('aria-pressed', state.shown.has(b.textContent)));
+  renderKpis(); renderLegend(); renderGantt(); renderCum(); renderPolicyTable(); renderJobTable();
+  const c = DATA.conditions[state.cond];
+  $('footer').textContent = `Condition weights (alpha, beta, delta) = (${c.weights.join(', ')}), arrival rate ${c.arrival_rate} jobs/s. ` +
+    `PPO and DQN use the seed-0 checkpoint. Random draws its own choices in this replay, so its picks differ from the results table run.`;
+}
+
+initFilters();
+render();
+addEventListener('resize', () => { renderGantt(); renderCum(); });
+matchMedia('(prefers-color-scheme: dark)').addEventListener('change', render);
+</script>
+</body>
+</html>
