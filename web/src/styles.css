@@ -1,0 +1,105 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Semantic palette. Light: Paper White page, Cloud White surfaces, Near Black ink, Cobalt Blue brand,
+   Safety Orange arm. The dark set swaps the roles; prefers-color-scheme drives it. */
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface: #ffffff; --ink: #0b0b0b; --ink-2: #52514e; --ink-3: #76746e;
+  --grid: #e1e0d9; --axis: #c3c2b7; --line: rgba(11, 11, 11, 0.12); --wash: rgba(11, 11, 11, 0.05);
+  --brand: #2a78d6; --brand-ink: #ffffff; --brand-wash: #e6f0fb; --arm: #eb6834;
+  --good: #137a2c; --warning: #b7791f; --critical: #c62828; --tray: #e8e7e1; --tray-edge: #b9b8ae; --focus: #0b0b0b;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0f0f0e; --surface: #1a1a19; --ink: #f4f4f1; --ink-2: #c3c2b7; --ink-3: #8f8d86;
+    --grid: #2c2c2a; --axis: #45453f; --line: rgba(255, 255, 255, 0.12); --wash: rgba(255, 255, 255, 0.06);
+    --brand: #5b9cf0; --brand-ink: #0b0b0b; --brand-wash: #1c2b40; --arm: #f0804f;
+    --good: #4fc26b; --warning: #e0a53a; --critical: #ef6a6a; --tray: #262623; --tray-edge: #4a4a44; --focus: #ffffff;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0f0f0e; --surface: #1a1a19; --ink: #f4f4f1; --ink-2: #c3c2b7; --ink-3: #8f8d86;
+  --grid: #2c2c2a; --axis: #45453f; --line: rgba(255, 255, 255, 0.12); --wash: rgba(255, 255, 255, 0.06);
+  --brand: #5b9cf0; --brand-ink: #0b0b0b; --brand-wash: #1c2b40; --arm: #f0804f;
+  --good: #4fc26b; --warning: #e0a53a; --critical: #ef6a6a; --tray: #262623; --tray-edge: #4a4a44; --focus: #ffffff;
+}
+
+/* shadcn/ui semantic tokens, mapped onto the palette. var() references, so the dark set flows through. */
+:root {
+  --background: var(--page); --foreground: var(--ink);
+  --card: var(--surface); --card-foreground: var(--ink);
+  --popover: var(--surface); --popover-foreground: var(--ink);
+  --primary: var(--brand); --primary-foreground: var(--brand-ink);
+  --secondary: var(--wash); --secondary-foreground: var(--ink);
+  --muted: var(--wash); --muted-foreground: var(--ink-2);
+  --accent: var(--brand-wash); --accent-foreground: var(--ink);
+  --destructive: var(--critical);
+  --border: var(--axis); --input: var(--axis); --ring: var(--brand);
+  --chart-1: var(--brand); --chart-2: var(--arm); --chart-3: var(--good); --chart-4: var(--warning); --chart-5: var(--critical);
+  --radius: 0.625rem;
+}
+
+@theme inline {
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-heading: var(--font-sans);
+  --color-page: var(--page);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-ink-3: var(--ink-3);
+  --color-grid: var(--grid);
+  --color-axis: var(--axis);
+  --color-line: var(--line);
+  --color-wash: var(--wash);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-wash: var(--brand-wash);
+  --color-arm: var(--arm);
+  --color-good: var(--good);
+  --color-warning: var(--warning);
+  --color-critical: var(--critical);
+  --color-tray: var(--tray);
+  --color-tray-edge: var(--tray-edge);
+  --color-focus: var(--focus);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+}
+
+@layer base {
+  html, body { @apply m-0 bg-page text-ink; }
+  body { @apply text-base leading-normal font-sans; }
+  svg { @apply block max-w-full; }
+  svg text { fill: var(--ink-3); font-size: 11px; font-variant-numeric: tabular-nums; }
+  :is(button, select, input, [tabindex]):focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+}

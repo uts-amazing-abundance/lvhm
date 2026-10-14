@@ -1,0 +1,21 @@
+/** Shared Tailwind recipes for the pieces shadcn/ui does not cover. Compose with cn(). */
+export const recipes = {
+  note: 'text-ink-3 text-[13px] m-0',
+  mono: 'tabular-nums',
+  rowHead: 'flex justify-between items-baseline gap-3 flex-wrap',
+  field: 'flex flex-col gap-1 text-[13px] text-ink-2 min-w-0',
+  th: 'text-xs text-ink-2 font-semibold whitespace-nowrap sticky top-0 bg-surface',
+  num: 'text-right',
+  badge: 'inline-block text-[11px] font-semibold px-1.5 rounded-full border border-current ml-1.5 leading-4',
+  chip: 'inline-flex items-center gap-1.5 border border-axis rounded-lg px-2.5 py-1.5 text-sm bg-surface min-h-9 text-ink',
+  chipActive: 'border-2 border-brand bg-brand-wash font-semibold',
+  chipAgree: 'border-brand',
+  kpi: 'border border-line rounded-lg p-2 text-center',
+  kpiKey: 'text-xs text-ink-2',
+  kpiVal: 'text-[22px] font-semibold leading-tight',
+  score: 'border border-line rounded-xl p-3 text-center',
+  scoreActive: 'border-2 border-brand bg-brand-wash',
+  legendItem: 'inline-flex items-center gap-1.5',
+  swatch: 'inline-block w-4 h-[3px] rounded-sm',
+  tipRow: 'flex justify-between gap-4 [&>span:first-child]:text-ink-2',
+} as const;

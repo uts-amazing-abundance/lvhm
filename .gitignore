@@ -46,3 +46,7 @@ docs/generated/
 docs/plans/
 .migration-backup/
 .qwen/tmp/
+
+# Web demo (web/)
+node_modules/
+web/dist/
