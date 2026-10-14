@@ -21,9 +21,9 @@ export function ChosenNowPanel({ state, policy, replay }: { state: ReplayState; 
   const note = !decision ? 'No decision yet.' : live ? `${at} · ${agree.length ? `agrees with ${agree.join(', ')}` : 'no rule picks the same job'}` : `last ${at}`;
 
   return (
-    <SectionCard title="Chosen now" action={<span className={recipes.note}>{note}</span>}>
+    <SectionCard title="Chosen now" description={<span className="block min-h-[2.6em]">{note}</span>}>
       {decision && (
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 min-h-9">
           <Chip who={policy} job={decision.job} mode={decision.careful ? 'careful' : 'normal'} className={recipes.chipActive} title={`${policy}'s actual pick at ${clock(decision.start)}`} />
           {picks.map((p) => (
             <Chip key={p.rule} who={p.rule} job={p.job} className={p.job === decision.job ? recipes.chipAgree : undefined} title={`${RULE_LONG[p.rule]} would pick this from the same queue`} />

@@ -24,7 +24,8 @@ export function StatusPanel({ state, shiftLength, policy, activeScore, best }: P
     { k: 'Careful', v: String(s.careful) },
     { k: 'Queue', v: String(state.queue.length) },
   ];
-  if (state.finished && s.unfinished) tiles.push({ k: 'Unfinished', v: String(s.unfinished), tone: 'bad' });
+  // Always present so the tile grid keeps its height; it only gets a value once the shift is over.
+  tiles.push({ k: 'Unfinished', v: state.finished ? String(s.unfinished) : '–', tone: state.finished && s.unfinished ? 'bad' : undefined });
   const lastPick = state.lastDecision ? `${OUTCOME_LABEL[state.lastDecision.outcome].toLowerCase()} on the last pick` : '';
 
   return (

@@ -80,7 +80,7 @@ export function CellView({ state, chosenJob }: { state: ReplayState; chosenJob: 
         {status && mode === '3d' && <p className="absolute left-2 bottom-2 m-0 text-[12px] text-ink-2 bg-surface/85 rounded px-2 py-0.5" aria-live="polite">{status}</p>}
         {status && mode === '2d' && <p className={cn(recipes.note, 'mt-1')} aria-live="polite">{status}</p>}
       </div>
-      <p className={cn(recipes.note, 'mt-2')}>{note}</p>
+      <p className={cn(recipes.note, 'mt-2 min-h-[2.6em]')}>{note}</p>
     </SectionCard>
   );
 }
