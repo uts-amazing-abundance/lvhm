@@ -20,7 +20,7 @@ const MESH_FILES = [
   'wrist_roll_pitch_so101_v2',
 ];
 const PRODUCT_COLOURS: Record<string, string> = { P1: '#2a78d6', P2: '#eb6834', P3: '#1baf7a', P4: '#d9a21b', P5: '#8e5bd6', P6: '#d03b3b' };
-const PART = 0.013;
+const PART = 0.02;
 const COLLISION_GROUP = 3;
 /** Layers of 3×3 parts an output spot holds before its oldest slots are reused. */
 const OUTPUT_LAYERS = 4;
@@ -36,7 +36,17 @@ interface ModelArrays {
   mesh_vertadr: Int32Array; mesh_vertnum: Int32Array; mesh_faceadr: Int32Array; mesh_facenum: Int32Array;
   mesh_vert: Float32Array; mesh_face: Int32Array;
 }
-interface DataArrays { qpos: Float64Array; geom_xpos: Float64Array; geom_xmat: Float64Array; site_xpos: Float64Array }
+interface DataArrays { qpos: Float64Array; geom_xpos: Float64Array; geom_xmat: Float64Array; site_xpos: Float64Array; site_xmat: Float64Array }
+
+/**
+ * Where a held part sits in the gripperframe site, measured from the vendored meshes: the fixed
+ * finger's inner face is the plane z = 0, the moving jaw's inner face closes to z ≈ 0.023 at the
+ * calibrated "closed" angle, and the finger pads run from x ≈ -0.015 to +0.008 along the approach
+ * axis. A 20 mm part therefore sits centred in that gap, slightly up the pads.
+ */
+const HELD_OFFSET = { x: -0.0035, y: 0, z: 0.0115 };
+/** Gripper angle while holding a part: the calibrated closed angle leaves a 23 mm gap, which fits the 20 mm part. */
+const GRIP_HOLD = 0.1;
 
 export class MujocoCell implements CellRenderer {
   private readonly scene = new THREE.Scene();
@@ -61,7 +71,7 @@ export class MujocoCell implements CellRenderer {
     private readonly timing: Timing,
   ) {
     THREE.Object3D.DEFAULT_UP.set(0, 0, 1); // MuJoCo is z-up
-    this.grip = { open: timing.layout.gripper_open, closed: timing.layout.gripper_closed };
+    this.grip = { open: timing.layout.gripper_open, closed: timing.layout.gripper_closed, hold: GRIP_HOLD };
     this.gripSite = model.site('gripperframe').id;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
@@ -157,12 +167,12 @@ export class MujocoCell implements CellRenderer {
     const lay = this.timing.layout;
     for (const s of [0, 1]) {
       const [tx, ty] = spot(lay, s, 'tray', 0);
-      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.095, 0.06, 0.005), this.material('#c3c2b7'));
+      const tray = new THREE.Mesh(new THREE.BoxGeometry(0.1, 0.062, 0.005), this.material('#c3c2b7'));
       tray.position.set(tx, ty, 0.0025);
       tray.rotation.z = Math.atan2(ty, tx);
       this.scene.add(tray);
       const [ox, oy] = spot(lay, s, 'out', 0);
-      const out = new THREE.Mesh(new THREE.BoxGeometry(0.065, 0.065, 0.004), this.material('#d9d8d0'));
+      const out = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.072, 0.004), this.material('#d9d8d0'));
       out.position.set(ox, oy, 0.002);
       this.scene.add(out);
     }
@@ -225,18 +235,17 @@ export class MujocoCell implements CellRenderer {
     // waiting parts in the trays, placed parts on the output spots
     this.parts.clear();
     const lay = this.timing.layout;
+    let fromPocket: [number, number, number] | null = null;
     for (const e of state.queue) {
       const s = e.job.tray;
       const k = e.pocket;
       if (k == null) continue; // every pocket taken: the part waits off-tray
       if (pose.lifted && state.inHand?.id === e.job.id) {
+        fromPocket = this.pocketWorld(s, k);
         if (pose.dropped) this.addPart(this.dropSpot(s), e.job, false, true);
         continue;
       }
-      const [tx, ty] = spot(lay, s, 'tray', 0);
-      const az = Math.atan2(ty, tx);
-      const u = ((k % 4) - 1.5) * 0.021, v = (Math.floor(k / 4) - 0.5) * 0.024;
-      this.addPart([tx + u * Math.cos(az) - v * Math.sin(az), ty + u * Math.sin(az) + v * Math.cos(az), 0.005 + PART / 2], e.job, e.job.id === chosenJob, false);
+      this.addPart(this.pocketWorld(s, k), e.job, e.job.id === chosenJob, false);
     }
     // parts already placed on each station's output spot (the one being released counts too)
     // 3×3 per layer, stacked up to OUTPUT_LAYERS; beyond that the oldest slots are reused so the
@@ -248,16 +257,32 @@ export class MujocoCell implements CellRenderer {
       const first = Math.max(0, placed - capacity);
       for (let i = first; i < placed; i++) {
         const slot = i % capacity, layer = Math.floor(slot / 9), k = slot % 9;
-        this.addPart([ox + ((k % 3) - 1) * 0.018, oy + (Math.floor(k / 3) - 1) * 0.018, 0.004 + PART / 2 + layer * PART], null, false, false);
+        this.addPart([ox + ((k % 3) - 1) * 0.022, oy + (Math.floor(k / 3) - 1) * 0.022, 0.004 + PART / 2 + layer * PART], null, false, false);
       }
     }
 
     this.held.visible = pose.carrying && state.inHand != null;
     if (this.held.visible && state.inHand) {
-      const sp = this.gripSite * 3;
-      this.held.position.set(d.site_xpos[sp], d.site_xpos[sp + 1], d.site_xpos[sp + 2] - 0.012);
+      // Seat the part between the fingers in the gripper frame, aligned with the gripper; while the
+      // fingers close in the pocket it slides from where it lay to where it is held.
+      const sp = this.gripSite * 3, sm = this.gripSite * 9;
+      const X = d.site_xmat;
+      const frame = new THREE.Matrix4().set(X[sm], X[sm + 1], X[sm + 2], 0, X[sm + 3], X[sm + 4], X[sm + 5], 0, X[sm + 6], X[sm + 7], X[sm + 8], 0, 0, 0, 0, 1);
+      const seat = new THREE.Vector3(HELD_OFFSET.x, HELD_OFFSET.y, HELD_OFFSET.z).applyMatrix4(frame)
+        .add(new THREE.Vector3(d.site_xpos[sp], d.site_xpos[sp + 1], d.site_xpos[sp + 2]));
+      if (fromPocket && pose.settle < 1) seat.lerpVectors(new THREE.Vector3(...fromPocket), seat, pose.settle);
+      this.held.position.copy(seat);
+      this.held.quaternion.setFromRotationMatrix(frame);
       this.held.material = this.material(PRODUCT_COLOURS[state.inHand.product] ?? '#898781');
     }
+  }
+
+  /** World position of a tray pocket: a 4×2 grid on the tray plate, aligned with the station. */
+  private pocketWorld(tray: number, k: number): [number, number, number] {
+    const [tx, ty] = spot(this.timing.layout, tray, 'tray', 0);
+    const az = Math.atan2(ty, tx);
+    const u = ((k % 4) - 1.5) * 0.023, v = (Math.floor(k / 4) - 0.5) * 0.026;
+    return [tx + u * Math.cos(az) - v * Math.sin(az), ty + u * Math.sin(az) + v * Math.cos(az), 0.005 + PART / 2];
   }
 
   private dropSpot(station: number): [number, number, number] {

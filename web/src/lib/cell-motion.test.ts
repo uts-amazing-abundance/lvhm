@@ -10,7 +10,7 @@ const timing = JSON.parse(readFileSync(new URL('../../../assets/so101/cell_timin
   layout: { radius: number; station_azimuth: number; spot_offset: number; gripper_open: number; gripper_closed: number };
   waypoints: Waypoints;
 };
-const grip = { open: timing.layout.gripper_open, closed: timing.layout.gripper_closed };
+const grip = { open: timing.layout.gripper_open, closed: timing.layout.gripper_closed, hold: 0.25 };
 
 describe('cell motion', () => {
   it('stays within the hull of the calibrated waypoints and moves continuously', () => {
