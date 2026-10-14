@@ -40,7 +40,7 @@ export default defineConfig({
   resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
   plugins: [react(), tailwindcss(), so101Assets()],
   server: { port: 5173, open: false },
-  build: { outDir: 'dist', sourcemap: false },
+  build: { outDir: 'dist', sourcemap: false, chunkSizeWarningLimit: 1200 },
   // The MuJoCo module resolves its .wasm next to itself; pre-bundling would break that.
   optimizeDeps: { exclude: ['@mujoco/mujoco'] },
 });
