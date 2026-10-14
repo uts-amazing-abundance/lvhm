@@ -22,6 +22,8 @@ const MESH_FILES = [
 const PRODUCT_COLOURS: Record<string, string> = { P1: '#2a78d6', P2: '#eb6834', P3: '#1baf7a', P4: '#d9a21b', P5: '#8e5bd6', P6: '#d03b3b' };
 const PART = 0.013;
 const COLLISION_GROUP = 3;
+/** Layers of 3×3 parts an output spot holds before its oldest slots are reused. */
+const OUTPUT_LAYERS = 4;
 
 interface Layout { radius: number; station_azimuth: number; spot_offset: number; gripper_open: number; gripper_closed: number }
 interface Timing { layout: Layout; waypoints: Waypoints }
@@ -237,11 +239,16 @@ export class MujocoCell implements CellRenderer {
       this.addPart([tx + u * Math.cos(az) - v * Math.sin(az), ty + u * Math.sin(az) + v * Math.cos(az), 0.005 + PART / 2], e.job, e.job.id === chosenJob, false);
     }
     // parts already placed on each station's output spot (the one being released counts too)
+    // 3×3 per layer, stacked up to OUTPUT_LAYERS; beyond that the oldest slots are reused so the
+    // part just released is always visible.
     for (const s of [0, 1]) {
-      const placed = Math.min(9, state.stats.completedByTray[s] + (pose.placed && state.armTo === s ? 1 : 0));
+      const placed = state.stats.completedByTray[s] + (pose.placed && state.armTo === s ? 1 : 0);
       const [ox, oy] = spot(lay, s, 'out', 0);
-      for (let k = 0; k < placed; k++) {
-        this.addPart([ox + ((k % 3) - 1) * 0.018, oy + (Math.floor(k / 3) - 1) * 0.018, 0.004 + PART / 2], null, false, false);
+      const capacity = 9 * OUTPUT_LAYERS;
+      const first = Math.max(0, placed - capacity);
+      for (let i = first; i < placed; i++) {
+        const slot = i % capacity, layer = Math.floor(slot / 9), k = slot % 9;
+        this.addPart([ox + ((k % 3) - 1) * 0.018, oy + (Math.floor(k / 3) - 1) * 0.018, 0.004 + PART / 2 + layer * PART], null, false, false);
       }
     }
 
