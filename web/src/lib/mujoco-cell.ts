@@ -22,8 +22,8 @@ const MESH_FILES = [
 const PRODUCT_COLOURS: Record<string, string> = { P1: '#2a78d6', P2: '#eb6834', P3: '#1baf7a', P4: '#d9a21b', P5: '#8e5bd6', P6: '#d03b3b' };
 const PART = 0.02;
 const COLLISION_GROUP = 3;
-/** Layers of 3×3 parts an output spot holds before its oldest slots are reused. */
-const OUTPUT_LAYERS = 4;
+/** Output spot grid (single layer, so the calibrated place height stays clear): oldest parts leave first. */
+const OUTPUT_COLS = 4;
 
 interface Layout { radius: number; station_azimuth: number; spot_offset: number; gripper_open: number; gripper_closed: number }
 interface Timing { layout: Layout; waypoints: Waypoints }
@@ -172,7 +172,7 @@ export class MujocoCell implements CellRenderer {
       tray.rotation.z = Math.atan2(ty, tx);
       this.scene.add(tray);
       const [ox, oy] = spot(lay, s, 'out', 0);
-      const out = new THREE.Mesh(new THREE.BoxGeometry(0.072, 0.072, 0.004), this.material('#d9d8d0'));
+      const out = new THREE.Mesh(new THREE.BoxGeometry(0.096, 0.096, 0.004), this.material('#d9d8d0'));
       out.position.set(ox, oy, 0.002);
       this.scene.add(out);
     }
@@ -247,17 +247,18 @@ export class MujocoCell implements CellRenderer {
       }
       this.addPart(this.pocketWorld(s, k), e.job, e.job.id === chosenJob, false);
     }
-    // parts already placed on each station's output spot (the one being released counts too)
-    // 3×3 per layer, stacked up to OUTPUT_LAYERS; beyond that the oldest slots are reused so the
-    // part just released is always visible.
+    // Parts placed on each station's output spot (the one being released counts too). One layer only:
+    // stacking would rise above the calibrated place height. When the grid is full the oldest slot is
+    // reused, as if a conveyor had taken that part away, so the newest part is always visible.
     for (const s of [0, 1]) {
       const placed = state.stats.completedByTray[s] + (pose.placed && state.armTo === s ? 1 : 0);
       const [ox, oy] = spot(lay, s, 'out', 0);
-      const capacity = 9 * OUTPUT_LAYERS;
+      const capacity = OUTPUT_COLS * OUTPUT_COLS;
       const first = Math.max(0, placed - capacity);
       for (let i = first; i < placed; i++) {
-        const slot = i % capacity, layer = Math.floor(slot / 9), k = slot % 9;
-        this.addPart([ox + ((k % 3) - 1) * 0.022, oy + (Math.floor(k / 3) - 1) * 0.022, 0.004 + PART / 2 + layer * PART], null, false, false);
+        const k = i % capacity;
+        const u = ((k % OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022, v = (Math.floor(k / OUTPUT_COLS) - (OUTPUT_COLS - 1) / 2) * 0.022;
+        this.addPart([ox + u, oy + v, 0.004 + PART / 2], null, false, false);
       }
     }
 
