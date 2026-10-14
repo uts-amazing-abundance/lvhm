@@ -26,28 +26,31 @@ export function CellView({ state, chosenJob }: { state: ReplayState; chosenJob: 
 
   useMount(() => { if (svgRef.current && !schematic.current) schematic.current = new SchematicCell(svgRef.current); });
 
+  // One load per mounted view, shared across effect re-runs (StrictMode mounts twice in dev).
+  const loading = useRef<Promise<MujocoCell> | null>(null);
   useEffect(() => {
     if (mode !== '3d' || mujoco.current || !divRef.current) return;
-    let cancelled = false;
+    let active = true;
     const container = divRef.current;
-    (async () => {
-      try {
-        const { MujocoCell } = await import('@/lib/mujoco-cell');
-        const cell = await MujocoCell.create(container, `${import.meta.env.BASE_URL}so101/`, (msg) => { if (!cancelled) setStatus(`${msg}…`); });
-        if (cancelled) { cell.dispose(); return; }
-        mujoco.current = cell;
-        setStatus(null);
-        setReady(true);
-      } catch (err) {
-        if (cancelled) return;
+    loading.current ??= import('@/lib/mujoco-cell').then(({ MujocoCell }) =>
+      MujocoCell.create(container, `${import.meta.env.BASE_URL}so101/`, (msg) => { if (active) setStatus(`${msg}…`); }));
+    loading.current.then(
+      (cell) => { mujoco.current = cell; if (active) { setStatus(null); setReady(true); } },
+      (err: unknown) => {
+        loading.current = null;
+        if (!active) return;
         setStatus(`MuJoCo view unavailable (${err instanceof Error ? err.message : String(err)}); showing the schematic.`);
         setMode('2d');
-      }
-    })();
-    return () => { cancelled = true; };
+      },
+    );
+    return () => { active = false; };
   }, [mode]);
 
-  useUnmount(() => { mujoco.current?.dispose(); mujoco.current = null; });
+  useUnmount(() => {
+    // Dispose only a finished renderer. A load still in flight is left to finish so a StrictMode
+    // remount (dev) can adopt it instead of fetching the 26 MB model twice.
+    if (mujoco.current) { mujoco.current.dispose(); mujoco.current = null; loading.current = null; }
+  });
 
   const show3d = mode === '3d' && ready;
   useEffect(() => {
@@ -55,9 +58,11 @@ export function CellView({ state, chosenJob }: { state: ReplayState; chosenJob: 
     view?.update(state, chosenJob);
   }, [state, chosenJob, show3d]);
 
-  const note = state.phase === 'travel' ? `swinging to tray ${state.armTo}`
+  const offTray = state.queue.filter((e) => e.pocket == null).length;
+  const note = (state.phase === 'travel' ? `swinging to tray ${state.armTo}`
     : state.phase === 'pick' ? `${state.current?.careful ? 'careful' : 'normal'} pick of #${state.current?.job}`
-    : state.phase === 'waiting' ? 'idle, waiting for arrivals' : 'shift over';
+    : state.phase === 'waiting' ? 'idle, waiting for arrivals' : 'shift over')
+    + (offTray ? ` · ${offTray} more waiting off-tray (every pocket is taken)` : '');
 
   return (
     <SectionCard

@@ -123,13 +123,35 @@ export class MujocoCell implements CellRenderer {
     return m;
   }
 
+  private floor: THREE.Mesh | null = null;
+  private grid: THREE.PolarGridHelper | null = null;
+  private readonly themeQuery = matchMedia('(prefers-color-scheme: dark)');
+  private readonly onTheme = (): void => this.applyTheme();
+
+  /** Floor and grid follow the page palette, so they swap with the colour scheme like the rest of the UI. */
+  private applyTheme(): void {
+    const floorMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(cssVar('--tray') || '#e8e7e1'), roughness: 0.95, metalness: 0 });
+    if (this.floor) { (this.floor.material as THREE.Material).dispose(); this.floor.material = floorMat; }
+    if (this.grid) {
+      const edge = new THREE.Color(cssVar('--tray-edge') || '#b9b8ae');
+      const line = new THREE.Color(cssVar('--grid') || '#d5d4cb');
+      this.grid.removeFromParent();
+      this.grid.dispose();
+      this.grid = new THREE.PolarGridHelper(0.45, 12, 6, 48, edge, line);
+      this.grid.rotation.x = Math.PI / 2;
+      this.scene.add(this.grid);
+    }
+  }
+
   private buildFloorAndStations(): void {
-    const floor = new THREE.Mesh(new THREE.CircleGeometry(0.45, 64), this.material(cssVar('--tray') || '#e8e7e1', { roughness: 0.95 }));
-    floor.position.z = -0.001;
-    this.scene.add(floor);
-    const grid = new THREE.PolarGridHelper(0.45, 12, 6, 48, 0xb9b8ae, 0xd5d4cb);
-    grid.rotation.x = Math.PI / 2;
-    this.scene.add(grid);
+    this.floor = new THREE.Mesh(new THREE.CircleGeometry(0.45, 64), this.material('#e8e7e1', { roughness: 0.95 }));
+    this.floor.position.z = -0.001;
+    this.scene.add(this.floor);
+    this.grid = new THREE.PolarGridHelper(0.45, 12, 6, 48, 0xb9b8ae, 0xd5d4cb);
+    this.grid.rotation.x = Math.PI / 2;
+    this.scene.add(this.grid);
+    this.applyTheme();
+    this.themeQuery.addEventListener('change', this.onTheme);
     const lay = this.timing.layout;
     for (const s of [0, 1]) {
       const [tx, ty] = spot(lay, s, 'tray', 0);
@@ -248,6 +270,7 @@ export class MujocoCell implements CellRenderer {
 
   dispose(): void {
     this.disposed = true;
+    this.themeQuery.removeEventListener('change', this.onTheme);
     this.resize.disconnect();
     this.controls.dispose();
     this.renderer.dispose();
