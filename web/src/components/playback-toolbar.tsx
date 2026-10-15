@@ -1,3 +1,4 @@
+import { ConditionInfoDialog, type DeltaOption } from '@/components/condition-info-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,6 +13,7 @@ interface Props {
   policy: string; cond: number; shift: number; speed: number; playing: boolean; t: number; horizon: number;
   onPolicy: (p: string) => void; onCond: (i: number) => void; onShift: (i: number) => void; onSpeed: (s: number) => void;
   onPlay: () => void; onReset: () => void; onScrub: (t: number) => void;
+  deltaOptions: DeltaOption[]; onDelta: (condIndex: number) => void;
 }
 
 const SPEEDS = [0.5, 1, 2, 4, 8, 16];
@@ -21,7 +23,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /** Policy, condition, shift and speed pickers, play/reset, and the shift-time scrubber. */
-export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, horizon, onPolicy, onCond, onShift, onSpeed, onPlay, onReset, onScrub }: Props) {
+export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, horizon, onPolicy, onCond, onShift, onSpeed, onPlay, onReset, onScrub, deltaOptions, onDelta }: Props) {
   const shifts = ds.conditions[cond].shifts;
   const policyLabel = (p: string) => (isRule(p) ? p : `${p} ${p === 'PPO' || p === 'DQN' ? '(learned)' : '(solver)'}`);
   const policyItems = Object.fromEntries(ds.policies.map((p) => [p, policyLabel(p)]));
@@ -38,12 +40,13 @@ export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, ho
             <SelectContent>{ds.policies.map((p) => <SelectItem key={p} value={p}>{policyLabel(p)}</SelectItem>)}</SelectContent>
           </Select>
         </Field>
-        <Field label="Test condition">
+        <div className={recipes.field}>
+          <span className="inline-flex items-center gap-1 leading-none">Test condition <ConditionInfoDialog condition={ds.conditions[cond]} deltaOptions={deltaOptions} onDelta={onDelta} /></span>
           <Select value={String(cond)} items={condItems} onValueChange={(v) => v != null && onCond(Number(v))}>
-            <SelectTrigger className="h-10 min-w-64 bg-surface"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 min-w-64 bg-surface" aria-label="Test condition"><SelectValue /></SelectTrigger>
             <SelectContent>{ds.conditions.map((c, i) => <SelectItem key={c.name} value={String(i)}>{c.description}</SelectItem>)}</SelectContent>
           </Select>
-        </Field>
+        </div>
         <Field label="Shift">
           <Select value={String(Math.min(shift, shifts.length - 1))} items={shiftItems} onValueChange={(v) => v != null && onShift(Number(v))}>
             <SelectTrigger className="h-10 min-w-36 bg-surface"><SelectValue /></SelectTrigger>

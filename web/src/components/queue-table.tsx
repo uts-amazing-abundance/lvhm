@@ -16,7 +16,8 @@ export function QueueTable({ state, policy, chosenJob }: { state: ReplayState; p
     <SectionCard
       title="Queue (arrival order)"
       action={<span className={recipes.note}>{state.queue.length} waiting · {Math.min(state.queue.length, 8)} visible to the policy</span>}
-      contentClassName="h-[360px] overflow-auto"
+      className="flex-1 min-h-0"
+      contentClassName="flex-1 min-h-[280px] overflow-auto"
     >
       <Table className="tabular-nums">
         <TableHeader>

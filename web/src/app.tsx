@@ -2,7 +2,7 @@ import { useEventListener, useMemoizedFn, useRafInterval, useRequest } from 'aho
 import { useMemo, useRef, useState } from 'react';
 import { CellView } from '@/components/cell-view';
 import { ChosenNowPanel } from '@/components/chosen-now-panel';
-import { PenaltyWeights, type DeltaOption } from '@/components/penalty-weights';
+import type { DeltaOption } from '@/components/condition-info-dialog';
 import { PickGantt } from '@/components/pick-gantt';
 import { PlaybackToolbar } from '@/components/playback-toolbar';
 import { QueueTable } from '@/components/queue-table';
@@ -120,10 +120,12 @@ function Dashboard({ ds }: { ds: Dataset }) {
         onPlay={togglePlay}
         onReset={() => { setPlaying(false); setT(0); }}
         onScrub={setT}
+        deltaOptions={deltaOptions}
+        onDelta={setCond}
       />
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-4">
-        <div className="min-w-0">
-          <PenaltyWeights weights={condition.weights} deltaOptions={deltaOptions} arrivalRate={condition.arrival_rate} onDelta={setCond} />
+        {/* The queue card stretches so the two columns end level; the chosen-now card keeps its size. */}
+        <div className="min-w-0 flex flex-col">
           <QueueTable state={state} policy={policy} chosenJob={chosenJob} />
           <ChosenNowPanel state={state} policy={policy} replay={replay} />
         </div>
