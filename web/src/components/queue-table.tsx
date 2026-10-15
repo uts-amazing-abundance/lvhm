@@ -14,7 +14,7 @@ const HEAD: [string, boolean, string][] = [
 ];
 
 /** The jobs waiting at time t in arrival order, with the active policy's pick marked. */
-export function QueueTable({ state, policy, chosenJob }: { state: ReplayState; policy: string; chosenJob: number | null }) {
+export function QueueTable({ state, chosenJob }: { state: ReplayState; chosenJob: number | null }) {
   const maxProc = Math.max(1, ...state.queue.map((e) => e.job.proc));
   return (
     <SectionCard
@@ -50,7 +50,7 @@ export function QueueTable({ state, policy, chosenJob }: { state: ReplayState; p
                 <TableCell className={recipes.num}>T{e.job.tray}</TableCell>
                 <TableCell>
                   {chosen
-                    ? <span className="text-brand font-semibold">◀ {policy} choice{state.current?.careful ? ' · careful' : ''}</span>
+                    ? <span className="text-brand font-semibold">◀ picking{state.current?.careful ? ' · careful' : ''}</span>
                     : e.slot == null ? 'beyond the 8 visible slots' : null}
                 </TableCell>
               </TableRow>

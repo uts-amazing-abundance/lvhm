@@ -124,7 +124,7 @@ function Dashboard({ ds }: { ds: Dataset }) {
       <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-x-4">
         {/* The queue card stretches so the two columns end level; the chosen-now card keeps its size. */}
         <div className="min-w-0 flex flex-col">
-          <QueueTable state={state} policy={policy} chosenJob={chosenJob} />
+          <QueueTable state={state} chosenJob={chosenJob} />
           <ChosenNowPanel state={state} policy={policy} replay={replay} />
         </div>
         <div className="min-w-0">
