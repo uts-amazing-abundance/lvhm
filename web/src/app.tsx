@@ -6,7 +6,7 @@ import type { DeltaOption } from '@/components/condition-info-dialog';
 import { PickGantt } from '@/components/pick-gantt';
 import { PlaybackToolbar } from '@/components/playback-toolbar';
 import { QueueTable } from '@/components/queue-table';
-import { ScoreChart, valueAt, type Series } from '@/components/score-chart';
+import { PolicyLineChart, valueAt, type Series } from '@/components/policy-line-chart';
 import { StatusPanel } from '@/components/status-panel';
 import { isRule } from '@/lib/dispatch-rules';
 import { Replay } from '@/lib/replay';
@@ -61,10 +61,10 @@ function Dashboard({ ds }: { ds: Dataset }) {
     const rules = ds.policies.filter((p) => isRule(p) && p !== policy);
     return rules.length ? rules.reduce((a, p) => (shift.runs[p].metrics.score > shift.runs[a].metrics.score ? p : a), rules[0]) : null;
   }, [ds, shift, policy]);
-  const series = useMemo<Series[]>(
-    () => ds.policies.map((p) => ({ name: p, pts: replays[p].cumulative(), role: p === policy ? 'active' : p === bestRule ? 'best' : 'other' })),
-    [ds, replays, policy, bestRule],
-  );
+  const role = (p: string): Series['role'] => (p === policy ? 'active' : p === bestRule ? 'best' : 'other');
+  const series = useMemo<Series[]>(() => ds.policies.map((p) => ({ name: p, pts: replays[p].cumulative(), role: role(p) })), [ds, replays, policy, bestRule]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Jobs waiting at each decision, per policy: the same shift, so the lanes differ only by what each policy picked.
+  const queueSeries = useMemo<Series[]>(() => ds.policies.map((p) => ({ name: p, pts: replays[p].steps.map((s) => [s.start, s.queueLen] as [number, number]), role: role(p) })), [ds, replays, policy, bestRule]); // eslint-disable-line react-hooks/exhaustive-deps
   const deltaOptions = useMemo<DeltaOption[]>(() => {
     // Conditions whose shifts are identical except for the damage weight.
     const sig = (i: number) => JSON.stringify([ds.conditions[i].arrival_rate, ds.conditions[i].shifts[0]?.jobs]);
@@ -134,7 +134,10 @@ function Dashboard({ ds }: { ds: Dataset }) {
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-4">
         <PickGantt policies={ds.policies} replays={replays} scores={scores} policy={policy} t={clampedT} horizon={horizon} onSeek={(v) => { setPlaying(false); setT(v); }} />
-        <ScoreChart series={series} horizon={horizon} t={clampedT} />
+        <div className="min-w-0 flex flex-col">
+          <PolicyLineChart title="Cumulative score" description="Reward collected so far on this shift." series={series} horizon={horizon} t={clampedT} height={210} />
+          <PolicyLineChart title="Queue length" description="Jobs waiting at each decision, per policy." series={queueSeries} horizon={horizon} t={clampedT} step height={210} decimals={0} />
+        </div>
       </div>
     </>
   );

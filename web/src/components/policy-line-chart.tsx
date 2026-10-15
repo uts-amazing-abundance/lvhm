@@ -19,10 +19,21 @@ export function valueAt(pts: [number, number][], t: number): number {
   return v;
 }
 
-const H = 260, LEFT = 44, RIGHT = 110, TOP = 12, BOTTOM = 28;
+const LEFT = 44, RIGHT = 110, TOP = 12, BOTTOM = 28;
 
-/** Cumulative-score chart: the active policy, the best rule dashed, the rest faint, with a playhead. */
-export function ScoreChart({ series, horizon, t }: { series: Series[]; horizon: number; t: number }) {
+interface Props {
+  title: string;
+  description: string;
+  series: Series[];
+  horizon: number;
+  t: number;
+  /** Draw each series as a step function (value holds until the next point) instead of a line. */
+  step?: boolean;
+  height?: number;
+  decimals?: number;
+}
+
+export function PolicyLineChart({ title, description, series, horizon, t, step: stepped = false, height: H = 260, decimals = 1 }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const W = Math.max(360, useSize(wrap)?.width ?? 600);
   const [theme, setTheme] = useState(0);
@@ -48,9 +59,16 @@ export function ScoreChart({ series, horizon, t }: { series: Series[]; horizon: 
   const y = (v: number) => TOP + (1 - (v - y0) / (y1 - y0)) * ih;
   const paths = useMemo(() => {
     const order = [...series.filter((s) => s.role === 'other'), ...series.filter((s) => s.role === 'best'), ...series.filter((s) => s.role === 'active')];
-    return order.map((s) => ({ s, d: s.pts.map((p, i) => `${i ? 'L' : 'M'}${x(p[0]).toFixed(1)},${y(p[1]).toFixed(1)}`).join('') }));
+    return order.map((s) => ({
+      s,
+      d: s.pts.map((p, i) => {
+        const px = x(p[0]).toFixed(1), py = y(p[1]).toFixed(1);
+        if (i === 0) return `M${px},${py}`;
+        return stepped ? `H${px}V${py}` : `L${px},${py}`;
+      }).join('') + (stepped ? `H${x(horizon).toFixed(1)}` : ''),
+    }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [series, horizon, W, y0, y1]);
+  }, [series, horizon, W, y0, y1, stepped]);
   const colour = (r: Series['role']) => (r === 'active' ? colours.brand : r === 'best' ? colours.ink2 : colours.axis);
   const active = series.find((s) => s.role === 'active');
   const best = series.find((s) => s.role === 'best');
@@ -67,7 +85,7 @@ export function ScoreChart({ series, horizon, t }: { series: Series[]; horizon: 
   const hoverVals = hover ? series.map((s) => [s.name, valueAt(s.pts, hover.t)] as const).sort((a, b) => b[1] - a[1]) : [];
 
   return (
-    <SectionCard title="Cumulative score" action={<span className={recipes.note}>Reward collected so far on this shift.</span>}>
+    <SectionCard title={title} action={<span className={recipes.note}>{description}</span>}>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-ink-2 mb-2">
         {active && <span className={recipes.legendItem}><span className={recipes.swatch} style={{ background: colours.brand }} />{active.name}</span>}
         {best && <span className={recipes.legendItem}><span className={cn(recipes.swatch, 'h-[2px]')} style={{ background: colours.ink2 }} />best rule ({best.name})</span>}
@@ -86,8 +104,8 @@ export function ScoreChart({ series, horizon, t }: { series: Series[]; horizon: 
           {paths.map(({ s, d }) => (
             <path key={s.name} d={d} fill="none" stroke={colour(s.role)} strokeWidth={s.role === 'active' ? 2.5 : s.role === 'best' ? 1.8 : 1.2} strokeDasharray={s.role === 'best' ? '5 4' : undefined} strokeLinejoin="round" />
           ))}
-          {active && <text x={LEFT + iw + 8} y={TOP + 14} style={{ fill: colours.brand, fontWeight: 650 }}>{active.name} {fmt(valueAt(active.pts, t), 1)}</text>}
-          {best && <text x={LEFT + iw + 8} y={TOP + 30} style={{ fill: colours.ink2 }}>{best.name} {fmt(valueAt(best.pts, t), 1)}</text>}
+          {active && <text x={LEFT + iw + 8} y={TOP + 14} style={{ fill: colours.brand, fontWeight: 650 }}>{active.name} {fmt(valueAt(active.pts, t), decimals)}</text>}
+          {best && <text x={LEFT + iw + 8} y={TOP + 30} style={{ fill: colours.ink2 }}>{best.name} {fmt(valueAt(best.pts, t), decimals)}</text>}
           <line x1={x(t)} x2={x(t)} y1={TOP} y2={TOP + ih} stroke={colours.brand} strokeWidth={1.5} strokeDasharray="2 3" />
           <rect x={LEFT} y={TOP} width={iw} height={ih} fill="transparent" onMouseMove={onMove} onMouseLeave={() => setHover(null)} />
         </svg>
@@ -96,7 +114,7 @@ export function ScoreChart({ series, horizon, t }: { series: Series[]; horizon: 
         <div role="tooltip" className="fixed pointer-events-none z-10 bg-surface text-ink border border-line rounded-lg px-2.5 py-2 text-[13px] shadow-lg max-w-[300px]"
           style={{ left: Math.min(hover.x + 14, innerWidth - 220), top: Math.min(hover.y + 14, innerHeight - 260) }}>
           <b className="font-semibold">{fmt(hover.t, 0)} s into the shift</b>
-          {hoverVals.map(([p, v]) => <div key={p} className={recipes.tipRow}><span>{p}</span><span>{fmt(v, 2)}</span></div>)}
+          {hoverVals.map(([p, v]) => <div key={p} className={recipes.tipRow}><span>{p}</span><span>{fmt(v, decimals + 1)}</span></div>)}
         </div>
       )}
     </SectionCard>
