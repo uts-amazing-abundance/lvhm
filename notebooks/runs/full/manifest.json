@@ -1,0 +1,106 @@
+{
+  "ppo": {
+    "0": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 48.33318271902055
+    },
+    "1": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 47.65634801680179
+    },
+    "2": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 46.73872809244001
+    },
+    "3": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 46.977274034928925
+    },
+    "4": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 48.08388390002866
+    },
+    "5": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 48.9649691827734
+    },
+    "6": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 49.05468672514739
+    },
+    "7": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 47.6224604961764
+    },
+    "8": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 46.164212032681164
+    },
+    "9": {
+      "steps": 1001472,
+      "finished": true,
+      "best_validation_score": 48.25560202659956
+    }
+  },
+  "dqn": {
+    "0": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 54.09201188113218
+    },
+    "1": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.39386051552778
+    },
+    "2": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.19499599085127
+    },
+    "3": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.338725013366776
+    },
+    "4": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.3134611264829
+    },
+    "5": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.77982206279903
+    },
+    "6": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 52.848365591968516
+    },
+    "7": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.55996174550063
+    },
+    "8": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.3845130449713
+    },
+    "9": {
+      "steps": 1000000,
+      "finished": true,
+      "best_validation_score": 53.52648769771296
+    }
+  }
+}

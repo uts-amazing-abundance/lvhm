@@ -9,10 +9,10 @@ __pycache__/
 # buffer and runs to ~72 MB. The small artefacts below are force-added (`git add -f`) and so
 # ARE tracked despite these rules, which is what lets the team read the results and load the
 # trained policies without re-running anything:
-#   notebooks/results/partc/**              tables, CSVs and figures behind the report
-#   notebooks/runs/partc/**/best_model.*    trained weights
-#   notebooks/runs/partc/**/validation.csv  learning curves
-#   notebooks/runs/partc/manifest.json      which runs finished, and their best scores
+#   notebooks/results/{partc,full}/**              tables, CSVs, figures and job_sequences.json
+#   notebooks/runs/{partc,full}/**/best_model.*    trained weights
+#   notebooks/runs/{partc,full}/**/validation.csv  learning curves
+#   notebooks/runs/{partc,full}/manifest.json      which runs finished, and their best scores
 runs/
 results/
 
