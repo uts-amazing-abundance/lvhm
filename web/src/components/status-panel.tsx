@@ -52,7 +52,7 @@ export function StatusPanel({ state, shiftLength, horizon, onSeek, policy, activ
         </div>
         {best && (
           <div className={recipes.score}>
-            <div className="text-[13px] text-ink-2">best dispatch rule ({best.name})</div>
+            <div className="text-[13px] text-ink-2">best baseline ({best.name})</div>
             <div className="text-3xl font-bold leading-none">{fmt(best.score, 1)}</div>
             <div className="text-xs text-ink-3">{policy} {signed(activeScore - best.score, 1)} so far</div>
           </div>

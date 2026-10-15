@@ -88,7 +88,7 @@ export function PolicyLineChart({ title, description, series, horizon, t, step: 
     <SectionCard title={title} action={<span className={recipes.note}>{description}</span>}>
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-ink-2 mb-2">
         {active && <span className={recipes.legendItem}><span className={recipes.swatch} style={{ background: colours.brand }} />{active.name}</span>}
-        {best && <span className={recipes.legendItem}><span className={cn(recipes.swatch, 'h-[2px]')} style={{ background: colours.ink2 }} />best dispatch rule ({best.name})</span>}
+        {best && <span className={recipes.legendItem}><span className={cn(recipes.swatch, 'h-[2px]')} style={{ background: colours.ink2 }} />best baseline ({best.name})</span>}
         <span className={recipes.legendItem}><span className={cn(recipes.swatch, 'h-[2px]')} style={{ background: colours.axis }} />other policies</span>
       </div>
       <div ref={wrap} className="overflow-x-auto">

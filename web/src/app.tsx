@@ -8,9 +8,10 @@ import { PlaybackToolbar } from '@/components/playback-toolbar';
 import { QueueTable } from '@/components/queue-table';
 import { PolicyLineChart, valueAt, type Series } from '@/components/policy-line-chart';
 import { StatusPanel } from '@/components/status-panel';
-import { isRule } from '@/lib/dispatch-rules';
 import { Replay } from '@/lib/replay';
 import type { Dataset } from '@/types/trace.types';
+
+const LEARNED = new Set(['PPO', 'DQN']);
 
 async function loadTrace(): Promise<Dataset> {
   const url = `${import.meta.env.BASE_URL}data/job_sequences.json`;
@@ -58,8 +59,9 @@ function Dashboard({ ds }: { ds: Dataset }) {
   const scores = useMemo(() => Object.fromEntries(ds.policies.map((p) => [p, shift.runs[p].metrics.score])) as Record<string, number>, [ds, shift]);
 
   const bestRule = useMemo(() => {
-    const rules = ds.policies.filter((p) => isRule(p) && p !== policy);
-    return rules.length ? rules.reduce((a, p) => (shift.runs[p].metrics.score > shift.runs[a].metrics.score ? p : a), rules[0]) : null;
+    // The strongest non-learned policy on this shift (the six rules, ATCSR+C and RollCP), other than the active one.
+    const baselines = ds.policies.filter((p) => !LEARNED.has(p) && p !== policy);
+    return baselines.length ? baselines.reduce((a, p) => (shift.runs[p].metrics.score > shift.runs[a].metrics.score ? p : a), baselines[0]) : null;
   }, [ds, shift, policy]);
   const role = (p: string): Series['role'] => (p === policy ? 'active' : p === bestRule ? 'best' : 'other');
   const series = useMemo<Series[]>(() => ds.policies.map((p) => ({ name: p, pts: replays[p].cumulative(), role: role(p) })), [ds, replays, policy, bestRule]); // eslint-disable-line react-hooks/exhaustive-deps
