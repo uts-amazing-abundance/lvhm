@@ -3,6 +3,7 @@ import { useMemo, useRef, useState } from 'react';
 import { CellView } from '@/components/cell-view';
 import { ChosenNowPanel } from '@/components/chosen-now-panel';
 import { PenaltyWeights, type DeltaOption } from '@/components/penalty-weights';
+import { PickGantt } from '@/components/pick-gantt';
 import { PlaybackToolbar } from '@/components/playback-toolbar';
 import { QueueTable } from '@/components/queue-table';
 import { ScoreChart, valueAt, type Series } from '@/components/score-chart';
@@ -55,6 +56,7 @@ function Dashboard({ ds }: { ds: Dataset }) {
   const replays = useMemo(() => Object.fromEntries(ds.policies.map((p) => [p, new Replay(ds, shift, shift.runs[p])])) as Record<string, Replay>, [ds, shift]);
   const replay = replays[policy];
   const horizon = replay.horizon;
+  const scores = useMemo(() => Object.fromEntries(ds.policies.map((p) => [p, shift.runs[p].metrics.score])) as Record<string, number>, [ds, shift]);
 
   const bestRule = useMemo(() => {
     const rules = ds.policies.filter((p) => isRule(p) && p !== policy);
@@ -124,12 +126,15 @@ function Dashboard({ ds }: { ds: Dataset }) {
           <PenaltyWeights weights={condition.weights} deltaOptions={deltaOptions} arrivalRate={condition.arrival_rate} onDelta={setCond} />
           <QueueTable state={state} policy={policy} chosenJob={chosenJob} />
           <ChosenNowPanel state={state} policy={policy} replay={replay} />
-          <ScoreChart series={series} horizon={horizon} t={clampedT} />
         </div>
         <div className="min-w-0">
           <CellView state={state} chosenJob={chosenJob} />
           <StatusPanel state={state} shiftLength={ds.shift_length} policy={policy} activeScore={activeScore} best={best} />
         </div>
+      </div>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-4">
+        <PickGantt policies={ds.policies} replays={replays} scores={scores} policy={policy} t={clampedT} horizon={horizon} onSeek={(v) => { setPlaying(false); setT(v); }} />
+        <ScoreChart series={series} horizon={horizon} t={clampedT} />
       </div>
       <p className={recipes.note}>
         Condition "{condition.name}": weights (α, β, δ) = ({condition.weights.join(', ')}), arrival rate {condition.arrival_rate} jobs/s.

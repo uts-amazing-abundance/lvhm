@@ -9,6 +9,7 @@ import wasmUrl from '@mujoco/mujoco/mujoco.wasm?url';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
 import { GRIPPER_JOINT, poseFor, spot, type GripperRange, type Waypoints } from '@/lib/cell-motion';
+import { productColour } from '@/lib/product-colours';
 import { cssVar } from '@/lib/svg-dom';
 import { createIkSolver } from '@/lib/so101-ik';
 import { TRAY_POCKETS, type Job, type ReplayState } from '@/lib/replay';
@@ -20,7 +21,6 @@ const MESH_FILES = [
   'under_arm_so101_v1', 'upper_arm_so101_v1', 'waveshare_mounting_plate_so101_v2', 'wrist_roll_follower_so101_v1',
   'wrist_roll_pitch_so101_v2',
 ];
-const PRODUCT_COLOURS: Record<string, string> = { P1: '#2a78d6', P2: '#eb6834', P3: '#1baf7a', P4: '#d9a21b', P5: '#8e5bd6', P6: '#d03b3b' };
 const PART = 0.02;
 const COLLISION_GROUP = 3;
 /** Output spot grid (single layer, so the calibrated place height stays clear): oldest parts leave first. */
@@ -271,7 +271,7 @@ export class MujocoCell implements CellRenderer {
         .add(new THREE.Vector3(d.site_xpos[sp], d.site_xpos[sp + 1], d.site_xpos[sp + 2]));
       this.held.position.copy(seat);
       this.held.quaternion.setFromRotationMatrix(frame);
-      this.held.material = this.material(PRODUCT_COLOURS[state.inHand.product] ?? '#898781');
+      this.held.material = this.material(productColour(state.inHand.product));
     }
   }
 
@@ -357,7 +357,7 @@ export class MujocoCell implements CellRenderer {
   }
 
   private addPart(pos: [number, number, number], job: Job | null, chosen: boolean, dropped: boolean): void {
-    const hex = dropped ? '#d03b3b' : job ? PRODUCT_COLOURS[job.product] ?? '#898781' : '#b9b8ae';
+    const hex = dropped ? '#d03b3b' : job ? productColour(job.product) : '#b9b8ae';
     const mesh = new THREE.Mesh(this.partGeometry, this.material(hex, chosen ? { emissive: new THREE.Color('#2a78d6'), emissiveIntensity: 0.6 } : {}));
     mesh.position.set(pos[0], pos[1], pos[2] + (chosen ? 0.004 : 0));
     if (dropped) mesh.rotation.set(0.6, 0.4, 0.2);
