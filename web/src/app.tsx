@@ -10,7 +10,6 @@ import { ScoreChart, valueAt, type Series } from '@/components/score-chart';
 import { StatusPanel } from '@/components/status-panel';
 import { isRule } from '@/lib/dispatch-rules';
 import { Replay } from '@/lib/replay';
-import { recipes } from '@/lib/ui-recipes';
 import type { Dataset } from '@/types/trace.types';
 
 async function loadTrace(): Promise<Dataset> {
@@ -27,11 +26,11 @@ export function App() {
     <main className="max-w-[1440px] mx-auto px-4 pt-4 pb-12">
       <header className="mb-4">
         <h1 className="text-2xl font-semibold tracking-tight m-0 mb-1">Work cell dashboard</h1>
-        <p className="text-ink-2 m-0 max-w-[80ch]">
+        <p className="text-ink-2 m-0">
           {error
             ? `Could not load the traced shifts: ${error.message}. Run the export cell in notebooks/experiments_phase2_1.ipynb and copy job_sequences.json to web/public/data/.`
             : ds
-              ? `Replays every pick each policy made on the pre-drawn test shifts of the ${ds.profile} run. ${ds.conditions[0].shifts.length} shifts per condition, ${ds.shift_length} s per shift. Pick a policy, press play, and compare its choices with the rules.`
+              ? `Replays every pick each policy made on the pre-drawn test shifts of the ${ds.profile} run. ${ds.conditions[0].shifts.length} shifts per condition, ${ds.shift_length}\u00a0s per shift. Pick a policy, press play, and compare its choices with the rules.`
               : 'Loading traced shifts…'}
         </p>
       </header>
@@ -112,14 +111,13 @@ function Dashboard({ ds }: { ds: Dataset }) {
   return (
     <>
       <PlaybackToolbar
-        ds={ds} policy={policy} cond={cond} shift={shiftIdx} speed={speed} playing={playing} t={clampedT} horizon={horizon}
+        ds={ds} policy={policy} cond={cond} shift={shiftIdx} speed={speed} playing={playing}
         onPolicy={setPolicy}
         onCond={(i) => { setCond(i); setShiftIdx(0); }}
         onShift={(i) => { setShiftIdx(i); setT(0); }}
         onSpeed={setSpeed}
         onPlay={togglePlay}
         onReset={() => { setPlaying(false); setT(0); }}
-        onScrub={setT}
         deltaOptions={deltaOptions}
         onDelta={setCond}
       />
@@ -131,18 +129,13 @@ function Dashboard({ ds }: { ds: Dataset }) {
         </div>
         <div className="min-w-0">
           <CellView state={state} chosenJob={chosenJob} />
-          <StatusPanel state={state} shiftLength={ds.shift_length} policy={policy} activeScore={activeScore} best={best} />
+          <StatusPanel state={state} shiftLength={ds.shift_length} horizon={horizon} onSeek={(v) => { setPlaying(false); setT(v); }} policy={policy} activeScore={activeScore} best={best} />
         </div>
       </div>
       <div className="grid grid-cols-1 xl:grid-cols-2 gap-x-4">
         <PickGantt policies={ds.policies} replays={replays} scores={scores} policy={policy} t={clampedT} horizon={horizon} onSeek={(v) => { setPlaying(false); setT(v); }} />
         <ScoreChart series={series} horizon={horizon} t={clampedT} />
       </div>
-      <p className={recipes.note}>
-        Condition "{condition.name}": weights (α, β, δ) = ({condition.weights.join(', ')}), arrival rate {condition.arrival_rate} jobs/s.
-        PPO and DQN replay their seed-0 checkpoint. Random draws its own choices in this trace, so its picks differ from the results-table run.
-        Rule chips under "Chosen now" are recomputed in the browser from the queue the active policy saw.
-      </p>
     </>
   );
 }

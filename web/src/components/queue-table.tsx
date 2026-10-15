@@ -7,7 +7,11 @@ import type { ReplayState } from '@/lib/replay';
 import { recipes } from '@/lib/ui-recipes';
 
 const FRAG_CLASS = { low: 'text-good', med: 'text-warning', high: 'text-critical' } as const;
-const HEAD: [string, boolean][] = [['Job', false], ['Product', false], ['Processing', false], ['Deadline', true], ['Fragility', false], ['Weight', true], ['Tray', true], ['', false]];
+/** Column label, numeric alignment, and a fixed width share so the table never reflows as cells change. */
+const HEAD: [string, boolean, string][] = [
+  ['Job', false, 'w-[11%]'], ['Product', false, 'w-[10%]'], ['Processing', false, 'w-[19%]'], ['Deadline', true, 'w-[11%]'],
+  ['Fragility', false, 'w-[10%]'], ['Weight', true, 'w-[9%]'], ['Tray', true, 'w-[7%]'], ['', false, 'w-[23%]'],
+];
 
 /** The jobs waiting at time t in arrival order, with the active policy's pick marked. */
 export function QueueTable({ state, policy, chosenJob }: { state: ReplayState; policy: string; chosenJob: number | null }) {
@@ -19,9 +23,9 @@ export function QueueTable({ state, policy, chosenJob }: { state: ReplayState; p
       className="flex-1 min-h-0"
       contentClassName="flex-1 min-h-[280px] overflow-auto"
     >
-      <Table className="tabular-nums">
+      <Table className="tabular-nums table-fixed">
         <TableHeader>
-          <TableRow>{HEAD.map(([n, num], i) => <TableHead key={i} className={cn(recipes.th, num && recipes.num)}>{n}</TableHead>)}</TableRow>
+          <TableRow>{HEAD.map(([n, num, w], i) => <TableHead key={i} className={cn(recipes.th, w, num && recipes.num)}>{n}</TableHead>)}</TableRow>
         </TableHeader>
         <TableBody>
           {state.queue.length === 0 && (

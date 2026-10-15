@@ -1,5 +1,6 @@
 import { cn } from 'cn';
 import { SectionCard } from '@/components/section-card';
+import { Slider } from '@/components/ui/slider';
 import { clock } from '@/lib/format-clock';
 import { fmt, signed } from '@/lib/format-number';
 import { OUTCOME_LABEL, type ReplayState } from '@/lib/replay';
@@ -8,13 +9,15 @@ import { recipes } from '@/lib/ui-recipes';
 interface Props {
   state: ReplayState;
   shiftLength: number;
+  horizon: number;
+  onSeek: (t: number) => void;
   policy: string;
   activeScore: number;
   best: { name: string; score: number } | null;
 }
 
 /** Shift clock, running KPIs and the score cards of the active policy versus the best rule. */
-export function StatusPanel({ state, shiftLength, policy, activeScore, best }: Props) {
+export function StatusPanel({ state, shiftLength, horizon, onSeek, policy, activeScore, best }: Props) {
   const s = state.stats;
   const tiles: { k: string; v: string; tone?: 'good' | 'bad' }[] = [
     { k: 'On time', v: String(s.onTime), tone: 'good' },
@@ -30,9 +33,8 @@ export function StatusPanel({ state, shiftLength, policy, activeScore, best }: P
 
   return (
     <SectionCard title="Shift clock" action={<span className={cn(recipes.mono, 'text-xl font-semibold')}>{clock(state.t)} / {clock(shiftLength)}</span>}>
-      <div className="h-2 bg-grid rounded overflow-hidden mb-4" role="progressbar" aria-valuemin={0} aria-valuemax={shiftLength} aria-valuenow={Math.min(state.t, shiftLength)} aria-label="Shift progress">
-        <div className="h-full bg-brand transition-[width] duration-75 ease-linear motion-reduce:transition-none" style={{ width: `${Math.min(100, (state.t / shiftLength) * 100)}%` }} />
-      </div>
+      {/* The clock's progress bar doubles as the scrubber: click or drag to move the replay. */}
+      <Slider value={[state.t]} min={0} max={horizon} step={0.1} onValueChange={(v) => onSeek(Array.isArray(v) ? v[0] : v)} aria-label="Shift time" className="mb-4 min-h-6" />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(84px,1fr))] gap-2">
         {tiles.map((tile) => (
           <div key={tile.k} className={recipes.kpi}>

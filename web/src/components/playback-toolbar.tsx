@@ -2,17 +2,15 @@ import { ConditionInfoDialog, type DeltaOption } from '@/components/condition-in
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Slider } from '@/components/ui/slider';
 import { isRule } from '@/lib/dispatch-rules';
-import { clock } from '@/lib/format-clock';
 import { recipes } from '@/lib/ui-recipes';
 import type { Dataset } from '@/types/trace.types';
 
 interface Props {
   ds: Dataset;
-  policy: string; cond: number; shift: number; speed: number; playing: boolean; t: number; horizon: number;
+  policy: string; cond: number; shift: number; speed: number; playing: boolean;
   onPolicy: (p: string) => void; onCond: (i: number) => void; onShift: (i: number) => void; onSpeed: (s: number) => void;
-  onPlay: () => void; onReset: () => void; onScrub: (t: number) => void;
+  onPlay: () => void; onReset: () => void;
   deltaOptions: DeltaOption[]; onDelta: (condIndex: number) => void;
 }
 
@@ -23,11 +21,11 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
 }
 
 /** Policy, condition, shift and speed pickers, play/reset, and the shift-time scrubber. */
-export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, horizon, onPolicy, onCond, onShift, onSpeed, onPlay, onReset, onScrub, deltaOptions, onDelta }: Props) {
+export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, onPolicy, onCond, onShift, onSpeed, onPlay, onReset, deltaOptions, onDelta }: Props) {
   const shifts = ds.conditions[cond].shifts;
   const policyLabel = (p: string) => (isRule(p) ? p : `${p} ${p === 'PPO' || p === 'DQN' ? '(learned)' : '(solver)'}`);
   const policyItems = Object.fromEntries(ds.policies.map((p) => [p, policyLabel(p)]));
-  const condItems = Object.fromEntries(ds.conditions.map((c, i) => [String(i), c.description]));
+  const condItems = Object.fromEntries(ds.conditions.map((c, i) => [String(i), shortCondition(c.name, c.description)]));
   const shiftItems = Object.fromEntries(shifts.map((s, i) => [String(i), `Shift ${s.shift} (${s.jobs.length} jobs)`]));
   const speedItems = Object.fromEntries(SPEEDS.map((s) => [String(s), `${s}×`]));
 
@@ -43,7 +41,7 @@ export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, ho
         <div className={recipes.field}>
           <span className="inline-flex items-center gap-1 leading-none">Test condition <ConditionInfoDialog condition={ds.conditions[cond]} deltaOptions={deltaOptions} onDelta={onDelta} /></span>
           <Select value={String(cond)} items={condItems} onValueChange={(v) => v != null && onCond(Number(v))}>
-            <SelectTrigger className="h-10 min-w-64 bg-surface" aria-label="Test condition"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 w-64 bg-surface" aria-label="Test condition"><SelectValue /></SelectTrigger>
             <SelectContent>{ds.conditions.map((c, i) => <SelectItem key={c.name} value={String(i)}>{c.description}</SelectItem>)}</SelectContent>
           </Select>
         </div>
@@ -63,11 +61,18 @@ export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, t, ho
           <Button size="lg" className="h-10 min-w-26 text-base" onClick={onPlay} aria-label={playing ? 'Pause' : 'Play'}>{playing ? '❚❚ Pause' : '▶ Play'}</Button>
           <Button size="lg" variant="outline" className="h-10 text-base" onClick={onReset}>Reset shift</Button>
         </div>
-        <div className="flex flex-col gap-2 flex-[1_1_240px] min-w-0 text-[13px] text-ink-2">
-          <span>Shift time <span className={recipes.mono}>{clock(t)}</span></span>
-          <Slider value={[t]} min={0} max={horizon} step={0.1} onValueChange={(v) => onScrub(Array.isArray(v) ? v[0] : v)} aria-label="Scrub shift time" className="min-h-6" />
-        </div>
       </CardContent>
     </Card>
   );
 }
+
+/** Short trigger label per condition; the full description stays in the dropdown and the info dialog. */
+const SHORT_CONDITION: Record<string, string> = {
+  familiar: '1. Normal day, P1–P4',
+  unseen_p5: '2a. Unseen P5 (inside range)',
+  unseen_p6: '2b. Unseen P6 (outside range)',
+  busy: '3. Busy day, 2× arrivals',
+  damage_hi: '4. Damage δ at range top',
+  damage_oor: '5. Damage δ outside range',
+};
+const shortCondition = (name: string, description: string): string => SHORT_CONDITION[name] ?? description;
