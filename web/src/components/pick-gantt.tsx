@@ -19,7 +19,7 @@ interface Props {
   onSeek: (t: number) => void;
 }
 
-const LEFT = 92, RIGHT = 12, TOP = 20, BOTTOM = 22, LANE = 40, BAR = 18, SPARK = 10;
+const LEFT = 108, RIGHT = 12, TOP = 20, BOTTOM = 22, LANE = 30, BAR = 18;
 
 /**
  * Every pick of every policy on this shift, one lane per policy, on the shift's time axis: the
@@ -139,16 +139,9 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
             {lanes.map((p, li) => {
               const y0 = TOP + li * LANE;
               const steps = replays[p].steps;
-              const maxQ = Math.max(8, ...steps.map((s) => s.queueLen));
-              const spark = steps.map((s, i) => {
-                const yy = y0 + BAR + 4 + SPARK - (s.queueLen / maxQ) * SPARK;
-                const nx = i + 1 < steps.length ? steps[i + 1].start : s.end;
-                return `${i ? 'L' : 'M'}${x(s.start).toFixed(1)},${yy.toFixed(1)}H${x(nx).toFixed(1)}`;
-              }).join('');
               return (
                 <g key={p}>
-                  <line x1={LEFT} x2={LEFT + iw} y1={y0 + BAR + 1} y2={y0 + BAR + 1} stroke={c.axis} />
-                  <path d={spark} fill="none" stroke={c.ink3} strokeWidth={1} />
+                  <line x1={LEFT} x2={LEFT + iw} y1={y0 + BAR + 1} y2={y0 + BAR + 1} stroke={c.grid} />
                   {steps.map((s) => {
                     if (s.end < t0 || s.start > t1) return null;
                     const future = s.start > t;
@@ -180,8 +173,10 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
             const active = p === policy;
             return (
               <g key={p}>
-                <text x={LEFT - 10} y={y0 + BAR / 2 + 4} textAnchor="end" style={{ fill: active ? c.brand : c.ink, fontSize: 12, fontWeight: 600 }}>{p}</text>
-                <text x={LEFT - 10} y={y0 + BAR + 12} textAnchor="end" style={{ fill: c.ink2 }}>score {fmt(scores[p], 1)}</text>
+                <text x={LEFT - 10} y={y0 + BAR / 2 + 4} textAnchor="end">
+                  <tspan style={{ fill: active ? c.brand : c.ink, fontSize: 12, fontWeight: 600 }}>{p}</tspan>
+                  <tspan style={{ fill: c.ink2 }}> {fmt(scores[p], 1)}</tspan>
+                </text>
               </g>
             );
           })}
