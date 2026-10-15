@@ -5,7 +5,11 @@ import { clock } from '@/lib/format-clock';
 import type { Replay, ReplayState } from '@/lib/replay';
 import { recipes } from '@/lib/ui-recipes';
 
-/** The active policy's pick at the latest decision, next to what each dispatch rule would have picked. */
+/**
+ * The Part B "Chosen now" panel: at the latest decision, the job the active policy picked next to
+ * the job each dispatch rule would have picked from the very same queue. Agreement shows whether
+ * the learned policy is doing something a simple rule would also do, or something none of them do.
+ */
 export function ChosenNowPanel({ state, policy, replay }: { state: ReplayState; policy: string; replay: Replay }) {
   const decision = state.lastDecision;
   const visible = decision ? replay.decisionQueue(decision).slice(0, 8) : [];
@@ -15,18 +19,24 @@ export function ChosenNowPanel({ state, policy, replay }: { state: ReplayState; 
       return { rule, job: i >= 0 ? visible[i].job.id : null };
     })
     : [];
-  const agree = picks.filter((p) => decision && p.job === decision.job).map((p) => p.rule);
+  const agree = picks.filter((p) => decision && p.job === decision.job).length;
   const live = state.phase === 'pick' || state.phase === 'travel';
-  const at = decision ? `decision ${decision.index + 1} at ${clock(decision.start)}, arm at tray ${decision.prevTray}, job tray ${replay.jobs[decision.job].tray}` : '';
-  const note = !decision ? 'No decision yet.' : live ? `${at} · ${agree.length ? `agrees with ${agree.join(', ')}` : 'no rule picks the same job'}` : `last ${at}`;
+  const note = !decision
+    ? 'No decision yet.'
+    : `${live ? 'Decision' : 'Last decision'} ${decision.index + 1} at ${clock(decision.start)} · ${visible.length} job${visible.length === 1 ? '' : 's'} visible · ${agree} of ${picks.length} rules agree`;
 
   return (
-    <SectionCard title="Chosen now" description={<span className="block min-h-[2.6em]">{note}</span>}>
+    <SectionCard
+      title="Chosen now"
+      description="The job the policy picked at this decision, next to the job each dispatch rule would have picked from the same queue. Rules that agree are outlined."
+      action={<span className={cn(recipes.note, 'whitespace-nowrap')}>{note}</span>}
+    >
       {decision && (
-        <div className="flex flex-wrap gap-2 min-h-9">
-          <Chip who={policy} job={decision.job} mode={decision.careful ? 'careful' : 'normal'} className={recipes.chipActive} title={`${policy}'s actual pick at ${clock(decision.start)}`} />
+        <div className="grid grid-cols-7 gap-2">
+          <Cell who={policy} job={decision.job} sub={decision.careful ? 'careful' : 'normal'} className="border-2 border-brand bg-brand-wash" title={`${policy}'s actual pick`} />
           {picks.map((p) => (
-            <Chip key={p.rule} who={p.rule} job={p.job} className={p.job === decision.job ? recipes.chipAgree : undefined} title={`${RULE_LONG[p.rule]} would pick this from the same queue`} />
+            <Cell key={p.rule} who={p.rule} job={p.job} sub={p.job === decision.job ? 'agrees' : undefined}
+              className={p.job === decision.job ? 'border-brand' : 'border-axis'} title={`${RULE_LONG[p.rule]} would pick this from the same queue`} />
           ))}
         </div>
       )}
@@ -34,12 +44,12 @@ export function ChosenNowPanel({ state, policy, replay }: { state: ReplayState; 
   );
 }
 
-function Chip({ who, job, mode, className, title }: { who: string; job: number | null; mode?: string; className?: string; title: string }) {
+function Cell({ who, job, sub, className, title }: { who: string; job: number | null; sub?: string; className?: string; title: string }) {
   return (
-    <div className={cn(recipes.chip, className)} title={title}>
-      <span className="text-ink-2">{who} →</span>
-      <span>{job == null ? '–' : `#${job}`}</span>
-      {mode && <span className="text-[11px] text-ink-3">{mode}</span>}
+    <div className={cn('rounded-lg border px-2 py-1.5 text-center min-w-0', className)} title={title}>
+      <div className="text-[11px] text-ink-2 truncate">{who}</div>
+      <div className="text-base font-semibold tabular-nums leading-tight">{job == null ? '–' : `#${job}`}</div>
+      <div className="text-[11px] text-ink-3 h-4">{sub ?? ''}</div>
     </div>
   );
 }
