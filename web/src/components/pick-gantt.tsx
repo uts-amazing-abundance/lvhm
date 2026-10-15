@@ -84,7 +84,7 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
   return (
     <SectionCard
       title="Pick sequence"
-      description={<span className="block min-h-[2.6em]">One lane per policy, one bar per pick (grey = tray switch, hatched = careful). Picks after the playhead are faded. Click a bar to follow that job, drag to zoom, click the time axis to jump there.</span>}
+      description="Every pick of every policy on this shift. Click a bar to follow a job, drag to zoom, click the axis to jump."
       action={
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={() => setView(null)} disabled={!view}>Reset zoom</Button>
@@ -95,6 +95,8 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
       <div className="flex flex-wrap gap-x-4 gap-y-1.5 text-[13px] text-ink-2 mb-2">
         {legend.map(([n, col]) => <span key={n} className={recipes.legendItem}><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ background: col }} />{n}</span>)}
         <span className={recipes.legendItem}><span className="inline-block w-3.5 h-2.5 rounded-sm" style={{ background: c.travel }} />tray switch</span>
+        <span className={recipes.legendItem}><svg width="14" height="10" aria-hidden="true"><rect width="14" height="10" rx="2" fill={c.good} /><rect width="14" height="10" rx="2" fill="url(#gantt-hatch)" /></svg>careful</span>
+        <span className={recipes.legendItem}><span className="inline-block w-3.5 h-2.5 rounded-sm opacity-35" style={{ background: c.good }} />after playhead</span>
       </div>
       <div ref={wrap} className="overflow-x-auto">
         <svg
