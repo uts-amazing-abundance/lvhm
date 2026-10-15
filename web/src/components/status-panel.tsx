@@ -32,7 +32,10 @@ export function StatusPanel({ state, shiftLength, horizon, onSeek, policy, activ
   const lastPick = state.lastDecision ? `${OUTCOME_LABEL[state.lastDecision.outcome].toLowerCase()} on the last pick` : '';
 
   return (
-    <SectionCard title="Shift clock" action={<span className={cn(recipes.mono, 'text-xl font-semibold')}>{clock(state.t)} / {clock(shiftLength)}</span>}>
+    <SectionCard title="Shift clock" action={<span className={cn(recipes.mono, 'text-xl font-semibold')} title={state.t > shiftLength ? 'The last pick started before the shift ended and runs to completion, as in the environment.' : undefined}>
+          {clock(Math.min(state.t, shiftLength))} / {clock(shiftLength)}
+          {state.t > shiftLength && <span className="text-sm font-normal text-ink-3"> +{fmt(state.t - shiftLength, 0)} s, finishing the last pick</span>}
+        </span>}>
       {/* The clock's progress bar doubles as the scrubber: click or drag to move the replay. */}
       <Slider value={[state.t]} min={0} max={horizon} step={0.1} onValueChange={(v) => onSeek(Array.isArray(v) ? v[0] : v)} aria-label="Shift time" className="mb-4 min-h-6" />
       <div className="grid grid-cols-[repeat(auto-fit,minmax(84px,1fr))] gap-2">
