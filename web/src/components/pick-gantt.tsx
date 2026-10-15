@@ -3,15 +3,11 @@ import { cn } from 'cn';
 import { useEffect, useMemo, useRef, useState, type MouseEvent } from 'react';
 import { SectionCard } from '@/components/section-card';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { fmt } from '@/lib/format-number';
 import { niceStep } from '@/lib/nice-step';
-import { productColour } from '@/lib/product-colours';
 import { OUTCOME_LABEL, type Replay, type Step } from '@/lib/replay';
 import { cssVar } from '@/lib/svg-dom';
 import { recipes } from '@/lib/ui-recipes';
-
-type ColourBy = 'outcome' | 'product' | 'tray';
 
 interface Props {
   policies: string[];
@@ -34,7 +30,6 @@ const LEFT = 92, RIGHT = 12, TOP = 20, BOTTOM = 22, LANE = 40, BAR = 18, SPARK =
 export function PickGantt({ policies, replays, scores, policy, t, horizon, onSeek }: Props) {
   const wrap = useRef<HTMLDivElement>(null);
   const W = Math.max(480, useSize(wrap)?.width ?? 640);
-  const [colourBy, setColourBy] = useState<ColourBy>('outcome');
   const [follow, setFollow] = useState<number | null>(null);
   const [view, setView] = useState<[number, number] | null>(null);
   const [brush, setBrush] = useState<{ x0: number; x1: number } | null>(null);
@@ -70,12 +65,7 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
   const ticks: number[] = [];
   for (let tt = Math.ceil(t0 / step) * step; tt <= t1 + 1e-9; tt += step) ticks.push(tt);
 
-  const fill = (s: Step) => {
-    const job = jobs[s.job];
-    if (colourBy === 'outcome') return outcomeColour[s.outcome];
-    if (colourBy === 'tray') return job.tray === 0 ? c.brand : c.arm;
-    return productColour(job.product);
-  };
+  const fill = (s: Step) => outcomeColour[s.outcome];
   const svgX = (ev: MouseEvent<SVGElement>) => { const r = ev.currentTarget.getBoundingClientRect(); return (ev.clientX - r.left) * (W / r.width); };
   const tip = (p: string, s: Step) => {
     const job = jobs[s.job];
@@ -89,10 +79,7 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
     ];
   };
 
-  const legend: [string, string][] = colourBy === 'outcome'
-    ? OUTCOME_LABEL.map((n, i) => [n, outcomeColour[i]])
-    : colourBy === 'tray' ? [['Tray 0', c.brand], ['Tray 1', c.arm]]
-      : [...new Set(jobs.map((j) => j.product))].sort().map((p) => [p, productColour(p)]);
+  const legend: [string, string][] = OUTCOME_LABEL.map((n, i) => [n, outcomeColour[i]]);
 
   return (
     <SectionCard
@@ -100,10 +87,6 @@ export function PickGantt({ policies, replays, scores, policy, t, horizon, onSee
       description={<span className="block min-h-[2.6em]">One lane per policy, one bar per pick (grey = tray switch, hatched = careful). Picks after the playhead are faded. Click a bar to follow that job, drag to zoom, click the time axis to jump there.</span>}
       action={
         <div className="flex items-center gap-2">
-          <Select value={colourBy} onValueChange={(v) => v && setColourBy(v as ColourBy)} items={{ outcome: 'Colour: outcome', product: 'Colour: product', tray: 'Colour: tray' }}>
-            <SelectTrigger size="sm"><SelectValue /></SelectTrigger>
-            <SelectContent><SelectItem value="outcome">Colour: outcome</SelectItem><SelectItem value="product">Colour: product</SelectItem><SelectItem value="tray">Colour: tray</SelectItem></SelectContent>
-          </Select>
           <Button size="sm" variant="outline" onClick={() => setView(null)} disabled={!view}>Reset zoom</Button>
           <Button size="sm" variant="outline" onClick={() => setFollow(null)} disabled={follow == null}>Clear job</Button>
         </div>
