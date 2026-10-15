@@ -238,13 +238,11 @@ export class MujocoCell implements CellRenderer {
 
     // waiting parts in the trays, placed parts on the output spots
     this.parts.clear();
-    let fromPocket: [number, number, number] | null = null;
     for (const e of state.queue) {
       const s = e.job.tray;
       const k = e.pocket;
       if (k == null) continue; // every pocket taken: the part waits off-tray
       if (pose.lifted && state.inHand?.id === e.job.id) {
-        fromPocket = this.pocketWorld(s, k);
         if (pose.dropped) this.addPart(this.dropSpot(s), e.job, false, true);
         continue;
       }
@@ -264,14 +262,13 @@ export class MujocoCell implements CellRenderer {
 
     this.held.visible = pose.carrying && state.inHand != null;
     if (this.held.visible && state.inHand) {
-      // Seat the part between the fingers in the gripper frame, aligned with the gripper; while the
-      // fingers close in the pocket it slides from where it lay to where it is held.
+      // Seat the part between the fingers in the gripper frame, aligned with the gripper. The fingers
+      // close on it in its pocket, so from then on it simply rides with the gripper.
       const sp = this.gripSite * 3, sm = this.gripSite * 9;
       const X = d.site_xmat;
       const frame = new THREE.Matrix4().set(X[sm], X[sm + 1], X[sm + 2], 0, X[sm + 3], X[sm + 4], X[sm + 5], 0, X[sm + 6], X[sm + 7], X[sm + 8], 0, 0, 0, 0, 1);
       const seat = new THREE.Vector3(HELD_OFFSET.x, HELD_OFFSET.y, HELD_OFFSET.z).applyMatrix4(frame)
         .add(new THREE.Vector3(d.site_xpos[sp], d.site_xpos[sp + 1], d.site_xpos[sp + 2]));
-      if (fromPocket && pose.settle < 1) seat.lerpVectors(new THREE.Vector3(...fromPocket), seat, pose.settle);
       this.held.position.copy(seat);
       this.held.quaternion.setFromRotationMatrix(frame);
       this.held.material = this.material(PRODUCT_COLOURS[state.inHand.product] ?? '#898781');
