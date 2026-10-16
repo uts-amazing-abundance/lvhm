@@ -2,6 +2,7 @@ import { ConditionInfoDialog, type DeltaOption } from '@/components/condition-in
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ShiftInfoDialog } from '@/components/shift-info-dialog';
 import { isRule } from '@/lib/dispatch-rules';
 import { recipes } from '@/lib/ui-recipes';
 import type { Dataset } from '@/types/trace.types';
@@ -45,12 +46,13 @@ export function PlaybackToolbar({ ds, policy, cond, shift, speed, playing, onPol
             <SelectContent>{ds.conditions.map((c, i) => <SelectItem key={c.name} value={String(i)}>{c.description}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-        <Field label="Shift">
+        <div className={recipes.field}>
+          <span className="inline-flex items-center gap-1 leading-none">Shift <ShiftInfoDialog ds={ds} shift={shifts[Math.min(shift, shifts.length - 1)]} traced={shifts.length} /></span>
           <Select value={String(Math.min(shift, shifts.length - 1))} items={shiftItems} onValueChange={(v) => v != null && onShift(Number(v))}>
-            <SelectTrigger className="h-10 min-w-36 bg-surface"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-10 min-w-36 bg-surface" aria-label="Shift"><SelectValue /></SelectTrigger>
             <SelectContent>{shifts.map((s, i) => <SelectItem key={s.shift} value={String(i)}>Shift {s.shift} ({s.jobs.length} jobs)</SelectItem>)}</SelectContent>
           </Select>
-        </Field>
+        </div>
         <Field label="Speed">
           <Select value={String(speed)} items={speedItems} onValueChange={(v) => v != null && onSpeed(Number(v))}>
             <SelectTrigger className="h-10 min-w-20 bg-surface"><SelectValue /></SelectTrigger>
